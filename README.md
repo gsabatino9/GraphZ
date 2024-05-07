@@ -3,6 +3,6 @@
 Librería de grafos implementada en zig
 
 ## Ejecución (temporal)
-```zig
+```bash
 zig run src/main.zig
 ```
