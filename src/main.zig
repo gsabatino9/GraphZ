@@ -1,71 +1,87 @@
 const std = @import("std");
 const print = std.debug.print;
 const Allocator = std.mem.Allocator;
+const stdin = std.io.getStdIn().reader();
 
-// implementación dict + adyacencias
-const Label = struct {
-    label: []const u8,
+const ReadError = error{BadRead};
 
-    fn deinit(self: Label, allocator: Allocator) void {
-        allocator.free(self.label);
+pub fn read_and_alloc_mem(allocator: Allocator) ReadError![]u8 {
+    var buf: [30]u8 = undefined;
+
+    print("Enter: ", .{});
+    const input: ?[]u8 = stdin.readUntilDelimiterOrEof(&buf, '\n') catch {
+        return ReadError.BadRead;
+    };
+
+    if (input.?.len == 0) {
+        return ReadError.BadRead;
     }
-};
+    const owned_input = allocator.dupe(u8, input.?) catch {
+        return ReadError.BadRead;
+    };
 
-const Adjacencies = struct {
-    adjacencies: std.ArrayList(Label),
-    allocator: Allocator,
+    return owned_input;
+}
 
-    pub fn init(allocator: Allocator) Adjacencies {
-        const adjacencies = std.ArrayList(Label).init(allocator);
-        return Adjacencies{ .adjacencies = adjacencies, .allocator = allocator };
-    }
-
-    pub fn deinit(self: Adjacencies) void {
-        for (self.adjacencies.items) |adj| {
-            adj.deinit(self.allocator);
+pub fn imp_hash(allocator: Allocator) !void {
+    var map = std.StringHashMap([]u8).init(allocator);
+    defer {
+        var it = map.iterator();
+        while (it.next()) |entry| {
+            const key = entry.key_ptr.*;
+            allocator.free(key);
+            const value = entry.value_ptr.*;
+            allocator.free(value);
         }
-        self.adjacencies.deinit();
+        map.deinit();
     }
 
-    pub fn add(self: *Adjacencies, label: []u8) !void {
-        const owned_label = try self.allocator.dupe(u8, label);
-        try self.adjacencies.append(.{ .label = owned_label });
-    }
+    while (true) {
+        const key = read_and_alloc_mem(allocator) catch {
+            break;
+        };
+        const val = read_and_alloc_mem(allocator) catch {
+            allocator.free(key);
+            break;
+        };
 
-    pub fn print_items(self: Adjacencies) void {
-        for (self.adjacencies.items) |adj| {
-            print("{s}, ", .{adj.label});
+        const v = map.getOrPut(key) catch {
+            allocator.free(key);
+            allocator.free(val);
+            break;
+        };
+
+        if (!v.found_existing) {
+            v.value_ptr.* = val;
+        } else {
+            const aux = v.value_ptr.*;
+            v.value_ptr.* = val;
+            // tengo que liberar el viejo valor porque
+            // se inserta uno nuevo. Y tengo que eliminar la clave porque
+            // ya existe una.
+            allocator.free(aux);
+            allocator.free(key);
         }
     }
-};
 
-const Node = struct { label: []u8, adjacencies: Adjacencies };
+    var it = map.iterator();
+    while (it.next()) |entry| {
+        print("{s}-{s}, ", .{ entry.key_ptr.*, entry.value_ptr.* });
+    }
+
+    print("\n", .{});
+    print("{any}", .{@TypeOf(map)});
+}
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
+    try imp_hash(allocator);
+}
 
-    var adjacencies = Adjacencies.init(allocator);
-    defer adjacencies.deinit();
-
-    const stdin = std.io.getStdIn().reader();
-
-    // stdout is an std.io.Writer
-    const stdout = std.io.getStdOut().writer();
-
-    var i: i32 = 0;
-    while (true) : (i += 1) {
-        var buf: [30]u8 = undefined;
-        try stdout.print("Please enter a name: ", .{});
-        if (try stdin.readUntilDelimiterOrEof(&buf, '\n')) |name| {
-            if (name.len == 0) {
-                break;
-            }
-            try adjacencies.add(name);
-        }
-    }
-
-    adjacencies.print_items();
-    print("\n", .{});
-    print("{any}\n", .{@TypeOf(adjacencies)});
+const testing = std.testing;
+test "Test memory leak" {
+    const allocator = testing.allocator;
+    try imp_hash(allocator);
+    try testing.expect(1 == 1);
 }
