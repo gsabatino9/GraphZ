@@ -38,17 +38,14 @@ pub fn get_key_value(allocator: Allocator) ![2][]u8 {
 }
 
 pub fn imp_hash(allocator: Allocator) !void {
-    var map = std.StringHashMap(std.ArrayList([]u8)).init(allocator);
+    var map = std.StringHashMap([]u8).init(allocator);
     defer {
         var it = map.iterator();
         while (it.next()) |entry| {
             const key = entry.key_ptr.*;
             allocator.free(key);
-            const adjacencies = entry.value_ptr.*;
-            for (adjacencies.items) |adj| {
-                allocator.free(adj);
-            }
-            adjacencies.deinit();
+            const value = entry.value_ptr.*;
+            allocator.free(value);
         }
         map.deinit();
     }
@@ -67,26 +64,24 @@ pub fn imp_hash(allocator: Allocator) !void {
         };
 
         if (!v.found_existing) {
-            var adjacencies = std.ArrayList([]u8).init(allocator);
-            try adjacencies.append(val);
-            v.value_ptr.* = adjacencies;
+            v.value_ptr.* = val;
         } else {
-            try v.value_ptr.*.append(val);
+            const aux = v.value_ptr.*;
+            v.value_ptr.* = val;
+            // tengo que liberar el viejo valor porque
+            // se inserta uno nuevo. Y tengo que eliminar la clave porque
+            // ya existe una.
+            allocator.free(aux);
             allocator.free(key);
         }
     }
 
     var it = map.iterator();
     while (it.next()) |entry| {
-        const key = entry.key_ptr.*;
-        const adjs = entry.value_ptr.*;
-
-        print("{s} -> [", .{key});
-        for (adjs.items) |item| {
-            print("{s}, ", .{item});
-        }
-        print("]\n", .{});
+        print("{s} -> {s}, ", .{ entry.key_ptr.*, entry.value_ptr.* });
     }
+
+    print("\n", .{});
 }
 
 pub fn main() !void {

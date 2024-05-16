@@ -1,0 +1,20 @@
+{
+	"relations": [
+		{
+			"source": "a",
+			"target": "b"
+		},
+		{
+			"source": "b",
+			"target": "c"
+		},
+		{
+			"source": "a",
+			"target": "d"
+		},
+		{
+			"source": "c",
+			"target": "d"
+		}
+	]
+}
