@@ -104,6 +104,61 @@ pub const Graph = struct {
 
         return amount_edges / 2;
     }
+
+    pub fn dfsIterator(self: *const Self, start: []const u8) !DFSIterator {
+        const h = self.ctx.hash(start);
+
+        if (!self.values.contains(h)) {
+            return GraphError.VertexNotFoundError;
+        }
+
+        const stack = std.ArrayList(u64).init(self.allocator);
+        const visited = std.AutoHashMap(u64, void).init(self.allocator);
+
+        return DFSIterator{
+            .g = self,
+            .stack = stack,
+            .visited = visited,
+            .current = h,
+        };
+    }
+
+    pub const DFSIterator = struct {
+        g: *const Self,
+        stack: std.ArrayList(u64),
+        visited: std.AutoHashMap(u64, void),
+        current: ?u64,
+
+        pub fn deinit(it: *DFSIterator) void {
+            it.stack.deinit();
+            it.visited.deinit();
+        }
+
+        pub fn next(it: *DFSIterator) !?u64 {
+            if (it.current == null) return null;
+
+            const result = it.current orelse unreachable;
+            try it.visited.put(result, {});
+
+            if (it.g.adj.getPtr(result)) |map| {
+                for (map.items) |target| {
+                    if (!it.visited.contains(target)) {
+                        try it.stack.append(target);
+                    }
+                }
+            }
+
+            it.current = null;
+            while (it.stack.popOrNull()) |nextVal| {
+                if (!it.visited.contains(nextVal)) {
+                    it.current = nextVal;
+                    break;
+                }
+            }
+
+            return result;
+        }
+    };
 };
 
 const testing = std.testing;
