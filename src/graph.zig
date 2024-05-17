@@ -54,6 +54,19 @@ pub const Graph = struct {
         }
     }
 
+    pub fn relation_exists(self: *Graph, source: []u8, target: []u8) !bool {
+        const obtained_result = self.map.get(source);
+        if (obtained_result) |adjacencies| {
+            for (adjacencies.items) |item| {
+                if (std.mem.eql(u8, target, item)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     pub fn print_relations(self: *Graph) void {
         var it = self.map.iterator();
         while (it.next()) |entry| {
@@ -90,4 +103,24 @@ test "Test graph memory leak" {
     }
 
     graph.print_relations();
+}
+
+test "Template" {
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator);
+    defer graph.deinit();
+
+    const s = try allocator.dupe(u8, "a");
+    const t = try allocator.dupe(u8, "b");
+    const a = try allocator.dupe(u8, "c");
+
+    _ = try graph.add_relation(s, t);
+    // _ = try graph.add_relation(s, a);
+    const e = try graph.relation_exists(s, t);
+    const e2 = try graph.relation_exists(s, a);
+
+    try testing.expect(e == true);
+    try testing.expect(e2 == false);
+
+    allocator.free(a);
 }
