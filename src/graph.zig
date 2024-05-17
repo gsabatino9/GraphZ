@@ -1,126 +1,142 @@
 const std = @import("std");
-const print = std.debug.print;
+const hash_map = std.hash_map;
+const math = std.math;
 const Allocator = std.mem.Allocator;
 
-const GraphError = error{ PutError, RelationError };
+pub const GraphError = error{
+    VertexNotFoundError,
+};
+
+// lo siguiente sirve en caso de querer usar atributos en la relación
+// ej: weight, algún label, etc
+// pub const AdjMapValue = hash_map.AutoHashMap(u64, u64);
+pub const AdjMapValue = std.ArrayList(u64);
+pub const AdjMap = hash_map.AutoHashMap(u64, AdjMapValue);
+// lo siguiente sirve para guardar atributos en el nodo.
+// Por ahora solo tiene el label, pero se puede extender más.
+pub const ValueMap = hash_map.AutoHashMap(u64, []const u8);
 
 pub const Graph = struct {
-    map: std.StringHashMap(std.ArrayList([]u8)),
     allocator: Allocator,
+    ctx: std.hash_map.StringContext,
+    adj: AdjMap,
+    values: ValueMap,
 
-    pub fn init(allocator: Allocator) Graph {
-        return .{ .map = std.StringHashMap(std.ArrayList([]u8)).init(allocator), .allocator = allocator };
-    }
+    const Self = @This();
+    const Size = AdjMap.Size;
 
-    pub fn deinit(self: *Graph) void {
-        var it = self.map.iterator();
-        while (it.next()) |entry| {
-            const source = entry.key_ptr.*;
-            self.allocator.free(source);
-            const adjacencies = entry.value_ptr.*;
-            for (adjacencies.items) |adj| {
-                self.allocator.free(adj);
-            }
-            adjacencies.deinit();
-        }
-
-        self.map.deinit();
-    }
-
-    pub fn add_relation(self: *Graph, source: []u8, target: []u8) !bool {
-        const v = self.map.getOrPut(source) catch {
-            return GraphError.PutError;
+    pub fn init(allocator: Allocator) Self {
+        return .{
+            .allocator = allocator,
+            .ctx = undefined,
+            .adj = AdjMap.init(allocator),
+            .values = ValueMap.init(allocator),
         };
+    }
 
-        if (!v.found_existing) {
-            var adjacencies = std.ArrayList([]u8).init(self.allocator);
-            try adjacencies.append(target);
-            v.value_ptr.* = adjacencies;
+    pub fn deinit(self: *Self) void {
+        var it = self.adj.iterator();
+        while (it.next()) |kv| {
+            kv.value_ptr.deinit();
+        }
+        self.adj.deinit();
+        self.values.deinit();
+        self.* = undefined;
+    }
+
+    /// la función devuelve true en caso de haber insertado
+    /// el nodo. false en caso de encontrarse presente.
+    pub fn add(self: *Self, v: []const u8) !bool {
+        const h = self.ctx.hash(v);
+
+        // si ya existe el nodo, no hago nada
+        if (self.adj.contains(h)) {
             return false;
-        } else {
-            try v.value_ptr.*.append(target);
-            return true;
         }
+
+        try self.adj.put(h, AdjMapValue.init(self.allocator));
+        try self.values.put(h, v);
+        return true;
     }
 
-    pub fn add_relation_release_memory(self: *Graph, source: []u8, target: []u8) !void {
-        const key_exists = self.add_relation(source, target) catch {
-            self.allocator.free(source);
-            self.allocator.free(target);
-            return GraphError.RelationError;
-        };
-        if (key_exists) {
-            self.allocator.free(source);
-        }
+    pub fn contains(self: *Self, v: []const u8) bool {
+        return self.values.contains(self.ctx.hash(v));
     }
 
-    pub fn relation_exists(self: *Graph, source: []u8, target: []u8) !bool {
-        const obtained_result = self.map.get(source);
-        if (obtained_result) |adjacencies| {
-            for (adjacencies.items) |item| {
-                if (std.mem.eql(u8, target, item)) {
-                    return true;
-                }
+    pub fn lookup(self: *Self, hash: u64) ?[]const u8 {
+        return self.values.get(hash);
+    }
+
+    pub fn addEdge(self: *Self, v1: []const u8, v2: []const u8) !void {
+        const h1 = self.ctx.hash(v1);
+        const h2 = self.ctx.hash(v2);
+
+        const map1 = self.adj.getPtr(h1) orelse return GraphError.VertexNotFoundError;
+        const map2 = self.adj.getPtr(h2) orelse return GraphError.VertexNotFoundError;
+
+        try map1.append(h2);
+        try map2.append(h1);
+    }
+
+    pub fn edgeExists(self: *const Self, v1: []const u8, v2: []const u8) bool {
+        const h1 = self.ctx.hash(v1);
+        const h2 = self.ctx.hash(v2);
+
+        const adj1 = self.adj.getPtr(h1).?;
+        for (adj1.items) |item| {
+            if (item == h2) {
+                return true;
             }
         }
-
         return false;
     }
 
-    pub fn print_relations(self: *Graph) void {
-        var it = self.map.iterator();
-        while (it.next()) |entry| {
-            const source = entry.key_ptr.*;
-            const adjs = entry.value_ptr.*;
+    pub fn countNodes(self: *Self) Size {
+        return self.values.count();
+    }
 
-            print("{s} -> [", .{source});
-            for (adjs.items) |item| {
-                print("{s}, ", .{item});
-            }
-            print("]\n", .{});
+    pub fn countEdges(self: *Self) Size {
+        var amount_edges: Size = 0;
+        var it = self.adj.iterator();
+        while (it.next()) |node| {
+            amount_edges += @intCast(node.value_ptr.items.len);
         }
+
+        return amount_edges / 2;
     }
 };
 
 const testing = std.testing;
-const get_relation = @import("utils.zig").get_relation;
-
-test "Test graph memory leak" {
+test "Test add nodes" {
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator);
-    defer graph.deinit();
+    var g = Graph.init(allocator);
+    defer g.deinit();
 
-    while (true) {
-        const relation = get_relation(allocator) catch {
-            break;
-        };
-        const source = relation[0];
-        const target = relation[1];
+    _ = try g.add("A");
+    _ = try g.add("B");
 
-        graph.add_relation_release_memory(source, target) catch {
-            break;
-        };
-    }
+    const contains_A: bool = g.contains("A");
+    const contains_B: bool = g.contains("B");
 
-    graph.print_relations();
+    try testing.expect(contains_A == true);
+    try testing.expect(contains_B == true);
+    try testing.expect(g.countNodes() == 2);
 }
 
-test "Template" {
+test "Test add edges" {
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator);
-    defer graph.deinit();
+    var g = Graph.init(allocator);
+    defer g.deinit();
 
-    const s = try allocator.dupe(u8, "a");
-    const t = try allocator.dupe(u8, "b");
-    const a = try allocator.dupe(u8, "c");
+    _ = try g.add("A");
+    _ = try g.add("B");
 
-    _ = try graph.add_relation(s, t);
-    // _ = try graph.add_relation(s, a);
-    const e = try graph.relation_exists(s, t);
-    const e2 = try graph.relation_exists(s, a);
+    try g.addEdge("A", "B");
 
-    try testing.expect(e == true);
-    try testing.expect(e2 == false);
+    const contains_A_B = g.edgeExists("A", "B");
+    const not_contains_A_C = g.edgeExists("A", "C");
 
-    allocator.free(a);
+    try testing.expect(contains_A_B == true);
+    try testing.expect(not_contains_A_C == false);
+    try testing.expect(g.countEdges() == 1);
 }
