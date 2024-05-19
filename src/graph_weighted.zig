@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 const ArrayList = std.ArrayList;
 const AutoHashMap = std.hash_map.AutoHashMap;
 const StringContext = std.hash_map.StringContext;
@@ -7,12 +8,18 @@ const Allocator = std.mem.Allocator;
 
 pub const GraphError = error{
     VertexNotFoundError,
+    EdgeNotFoundError,
 };
 
 // lo siguiente sirve en caso de querer usar atributos en la relación
 // ej: weight, algún label, etc
+
+const RelationAttributes = struct { weight: i32 };
+const Relation = struct { node_relation: u64, relation_attrs: RelationAttributes };
+
 // pub const Adjacents = AutoHashMap(u64, u64);
-pub const Adjacents = ArrayList(u64);
+// pub const Adjacents = ArrayList(u64);
+pub const Adjacents = std.MultiArrayList(Relation);
 pub const AdjacentsMap = AutoHashMap(u64, Adjacents);
 
 // lo siguiente sirve para guardar atributos en el nodo.
@@ -40,7 +47,7 @@ pub const Graph = struct {
     pub fn deinit(self: *Self) void {
         var it = self.adj.iterator();
         while (it.next()) |kv| {
-            kv.value_ptr.deinit();
+            kv.value_ptr.deinit(self.allocator);
         }
         self.adj.deinit();
         self.values.deinit();
@@ -57,7 +64,7 @@ pub const Graph = struct {
             return false;
         }
 
-        try self.adj.put(h, Adjacents.init(self.allocator));
+        try self.adj.put(h, Adjacents{});
         try self.values.put(h, v);
         return true;
     }
@@ -70,15 +77,17 @@ pub const Graph = struct {
         return self.values.get(hash);
     }
 
-    pub fn addEdge(self: *Self, v1: []const u8, v2: []const u8) !void {
+    pub fn addEdge(self: *Self, v1: []const u8, v2: []const u8, relation_attrs: RelationAttributes) !void {
         const h1 = self.ctx.hash(v1);
         const h2 = self.ctx.hash(v2);
 
         const map1 = self.adj.getPtr(h1) orelse return GraphError.VertexNotFoundError;
         const map2 = self.adj.getPtr(h2) orelse return GraphError.VertexNotFoundError;
 
-        try map1.append(h2);
-        try map2.append(h1);
+        const relation_1_2 = Relation{ .node_relation = h2, .relation_attrs = relation_attrs };
+        const relation_2_1 = Relation{ .node_relation = h1, .relation_attrs = relation_attrs };
+        try map1.append(self.allocator, relation_1_2);
+        try map2.append(self.allocator, relation_2_1);
     }
 
     pub fn edgeExists(self: *const Self, v1: []const u8, v2: []const u8) bool {
@@ -86,12 +95,26 @@ pub const Graph = struct {
         const h2 = self.ctx.hash(v2);
 
         const adj1 = self.adj.getPtr(h1).?;
-        for (adj1.items) |item| {
+        for (adj1.items(.node_relation)) |item| {
             if (item == h2) {
                 return true;
             }
         }
         return false;
+    }
+
+    pub fn getEdge(self: *const Self, v1: []const u8, v2: []const u8) !RelationAttributes {
+        const h1 = self.ctx.hash(v1);
+        const h2 = self.ctx.hash(v2);
+
+        const adj1 = self.adj.getPtr(h1).?;
+        for (adj1.items(.node_relation), adj1.items(.relation_attrs)) |node_relation, relation_attrs| {
+            if (node_relation == h2) {
+                return relation_attrs;
+            }
+        }
+
+        return GraphError.EdgeNotFoundError;
     }
 
     pub fn countNodes(self: *Self) Size {
@@ -102,7 +125,7 @@ pub const Graph = struct {
         var amount_edges: Size = 0;
         var it = self.adj.iterator();
         while (it.next()) |node| {
-            amount_edges += @intCast(node.value_ptr.items.len);
+            amount_edges += @intCast(node.value_ptr.len);
         }
 
         return amount_edges / 2;
@@ -144,7 +167,7 @@ pub const Graph = struct {
             try it.visited.put(result, {});
 
             if (it.g.adj.getPtr(result)) |map| {
-                for (map.items) |target| {
+                for (map.items(.node_relation)) |target| {
                     if (!it.visited.contains(target)) {
                         try it.stack.append(target);
                     }
@@ -165,7 +188,6 @@ pub const Graph = struct {
 };
 
 const testing = std.testing;
-const print = std.debug.print;
 test "Test add nodes" {
     const allocator = testing.allocator;
     var g = Graph.init(allocator);
@@ -190,13 +212,15 @@ test "Test add edges" {
     _ = try g.add("A");
     _ = try g.add("B");
 
-    try g.addEdge("A", "B");
+    try g.addEdge("A", "B", RelationAttributes{ .weight = 10 });
 
     const contains_A_B = g.edgeExists("A", "B");
     const not_contains_A_C = g.edgeExists("A", "C");
+    const relation_attrs = try g.getEdge("A", "B");
 
     try testing.expect(contains_A_B == true);
     try testing.expect(not_contains_A_C == false);
+    try testing.expect(relation_attrs.weight == 10);
     try testing.expect(g.countEdges() == 1);
 }
 
@@ -208,7 +232,7 @@ test "Test dfs" {
     _ = try g.add("A");
     _ = try g.add("B");
 
-    try g.addEdge("A", "B");
+    try g.addEdge("A", "B", RelationAttributes{ .weight = 10 });
 
     var it = try g.dfsIterator("A");
     defer it.deinit();
