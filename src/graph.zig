@@ -1,5 +1,7 @@
 const std = @import("std");
-const hash_map = std.hash_map;
+const ArrayList = std.ArrayList;
+const AutoHashMap = std.hash_map.AutoHashMap;
+const StringContext = std.hash_map.StringContext;
 const math = std.math;
 const Allocator = std.mem.Allocator;
 
@@ -9,28 +11,29 @@ pub const GraphError = error{
 
 // lo siguiente sirve en caso de querer usar atributos en la relación
 // ej: weight, algún label, etc
-// pub const AdjMapValue = hash_map.AutoHashMap(u64, u64);
-pub const AdjMapValue = std.ArrayList(u64);
-pub const AdjMap = hash_map.AutoHashMap(u64, AdjMapValue);
+// pub const Adjacents = AutoHashMap(u64, u64);
+pub const Adjacents = ArrayList(u64);
+pub const AdjacentsMap = AutoHashMap(u64, Adjacents);
+
 // lo siguiente sirve para guardar atributos en el nodo.
 // Por ahora solo tiene el label, pero se puede extender más.
-pub const ValueMap = hash_map.AutoHashMap(u64, []const u8);
+pub const NodesMap = AutoHashMap(u64, []const u8);
 
 pub const Graph = struct {
     allocator: Allocator,
-    ctx: std.hash_map.StringContext,
-    adj: AdjMap,
-    values: ValueMap,
+    ctx: StringContext,
+    adj: AdjacentsMap,
+    values: NodesMap,
 
     const Self = @This();
-    const Size = AdjMap.Size;
+    const Size = AdjacentsMap.Size;
 
     pub fn init(allocator: Allocator) Self {
         return .{
             .allocator = allocator,
             .ctx = undefined,
-            .adj = AdjMap.init(allocator),
-            .values = ValueMap.init(allocator),
+            .adj = AdjacentsMap.init(allocator),
+            .values = NodesMap.init(allocator),
         };
     }
 
@@ -54,7 +57,7 @@ pub const Graph = struct {
             return false;
         }
 
-        try self.adj.put(h, AdjMapValue.init(self.allocator));
+        try self.adj.put(h, Adjacents.init(self.allocator));
         try self.values.put(h, v);
         return true;
     }
