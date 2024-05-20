@@ -84,10 +84,12 @@ pub const Graph = struct {
         const h1 = self.ctx.hash(label1);
         const h2 = self.ctx.hash(label2);
 
-        const adj1 = self.adj.getPtr(h1).?;
-        for (adj1.items) |item| {
-            if (item == h2) {
-                return true;
+        const map1 = self.adj.getPtr(h1);
+        if (map1) |adj1| {
+            for (adj1.items) |item| {
+                if (item == h2) {
+                    return true;
+                }
             }
         }
         return false;
