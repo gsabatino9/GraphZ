@@ -11,7 +11,6 @@ pub const GraphError = error{
 
 // lo siguiente sirve en caso de querer usar atributos en la relación
 // ej: weight, algún label, etc
-// pub const Adjacents = AutoHashMap(u64, u64);
 pub const Adjacents = ArrayList(u64);
 pub const AdjacentsMap = AutoHashMap(u64, Adjacents);
 
@@ -49,8 +48,8 @@ pub const Graph = struct {
 
     /// la función devuelve true en caso de haber insertado
     /// el nodo. false en caso de encontrarse presente.
-    pub fn add(self: *Self, v: []const u8) !bool {
-        const h = self.ctx.hash(v);
+    pub fn add(self: *Self, node_label: []const u8) !bool {
+        const h = self.ctx.hash(node_label);
 
         // si ya existe el nodo, no hago nada
         if (self.adj.contains(h)) {
@@ -58,21 +57,21 @@ pub const Graph = struct {
         }
 
         try self.adj.put(h, Adjacents.init(self.allocator));
-        try self.values.put(h, v);
+        try self.values.put(h, node_label);
         return true;
     }
 
-    pub fn contains(self: *Self, v: []const u8) bool {
-        return self.values.contains(self.ctx.hash(v));
+    pub fn contains(self: *Self, node_label: []const u8) bool {
+        return self.values.contains(self.ctx.hash(node_label));
     }
 
     pub fn lookup(self: *Self, hash: u64) ?[]const u8 {
         return self.values.get(hash);
     }
 
-    pub fn addEdge(self: *Self, v1: []const u8, v2: []const u8) !void {
-        const h1 = self.ctx.hash(v1);
-        const h2 = self.ctx.hash(v2);
+    pub fn addEdge(self: *Self, label1: []const u8, label2: []const u8) !void {
+        const h1 = self.ctx.hash(label1);
+        const h2 = self.ctx.hash(label2);
 
         const map1 = self.adj.getPtr(h1) orelse return GraphError.VertexNotFoundError;
         const map2 = self.adj.getPtr(h2) orelse return GraphError.VertexNotFoundError;
@@ -81,9 +80,9 @@ pub const Graph = struct {
         try map2.append(h1);
     }
 
-    pub fn edgeExists(self: *const Self, v1: []const u8, v2: []const u8) bool {
-        const h1 = self.ctx.hash(v1);
-        const h2 = self.ctx.hash(v2);
+    pub fn edgeExists(self: *const Self, label1: []const u8, label2: []const u8) bool {
+        const h1 = self.ctx.hash(label1);
+        const h2 = self.ctx.hash(label2);
 
         const adj1 = self.adj.getPtr(h1).?;
         for (adj1.items) |item| {
@@ -108,8 +107,8 @@ pub const Graph = struct {
         return amount_edges / 2;
     }
 
-    pub fn dfsIterator(self: *const Self, start: []const u8) !DFSIterator {
-        const h = self.ctx.hash(start);
+    pub fn dfsIterator(self: *const Self, label_to_start: []const u8) !DFSIterator {
+        const h = self.ctx.hash(label_to_start);
 
         if (!self.values.contains(h)) {
             return GraphError.VertexNotFoundError;
