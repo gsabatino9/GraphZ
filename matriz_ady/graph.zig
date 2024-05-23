@@ -26,6 +26,10 @@ const Node = struct {
         self.adj.items[pos] = resultado;
     }
 
+    pub fn deinit(self: *Self) void {
+        self.adj.deinit();
+    }
+
 };
 
 pub const Graph = struct {
@@ -44,9 +48,9 @@ pub const Graph = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        print("Elimino el grafo\n", .{});
         for (self.nodes_map.items) | nodo |{   
-            nodo.adj.deinit();
+            var n = nodo;
+            n.deinit();
             //nodo.label.deinit();
         }
         self.nodes_map.deinit();
@@ -109,7 +113,7 @@ pub const Graph = struct {
     /// devuelve GraphError.NODE_NOT_FOUND en caso de que alguno de los dos nodos
     /// no existan
     /// Esta implementación es para grafos no dirigidos
-    pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) !void {
+    pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) !bool {
         // si no existen los nodos, devuelvo error 
         if (!(self.contiene(node1)) or !(self.contiene(node2))) {
             return GraphError.NODE_NOT_FOUND;
@@ -122,8 +126,8 @@ pub const Graph = struct {
                 node1_pos = i;
                 break;
             }
-        
         }
+
         for (self.nodes_map.items, 0..) | nodo, i| {
             if ((std.mem.eql(u8, nodo.label, node2))){
                 node2_pos = i;
@@ -132,6 +136,7 @@ pub const Graph = struct {
         }
         self.nodes_map.items[node1_pos].agregar_adyacencia(node2_pos);
         self.nodes_map.items[node2_pos].agregar_adyacencia(node1_pos);
+        return true;
     }
 
     /// devuelve true en caso de que el eje exista, false en caso de que no
@@ -157,10 +162,30 @@ pub const Graph = struct {
         return false;
     }
 
-    //pub fn deleteNode(self: *Self, node1: []const u8) !void{
+    pub fn deleteNode(self: *Self, node1: []const u8) !void{
+        if (!self.contiene(node1)) {
+            return GraphError.NODE_NOT_FOUND;
+        }
 
-//        return;
-//    }
+        var node_pos: usize = undefined;
+        //var label: u8 = undefined;
+
+        for (self.nodes_map.items, 0..) | nodo, i| {
+            if (std.mem.eql(u8, nodo.label, node1)){
+                node_pos = i;
+                
+                var n = self.nodes_map.orderedRemove(i);
+                //label = n.label; //esta linea falla
+                n.deinit();
+            }
+        }
+        for (self.nodes_map.items) | nodo| {
+            var n = nodo;
+            _ = n.adj.orderedRemove(node_pos);
+        }
+
+        //return label;
+    }
 
     pub fn deleteEdge(self: *Self, node1: []const u8, node2: []const u8) !void {
         // si no existen los nodos, devuelvo error 
@@ -221,4 +246,10 @@ test "Test agrego nodos y existen\n" {
     _ = try graph.deleteEdge("A", "B");
     try testing.expect(graph.edgeExists("A", "B") == false);
     try testing.expect(graph.edgeExists("B", "A") == false);
+
+
+    _ = try graph.deleteNode("A");
+    try testing.expect(graph.nodeExists("A") == false);
+    try testing.expect(graph.edgeExists("C", "A") == false);
+    
 }
