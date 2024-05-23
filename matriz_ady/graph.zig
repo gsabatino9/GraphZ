@@ -8,7 +8,6 @@ const GraphError = error{ NODE_NOT_EXISTS, EDGE_NOT_EXISTS, NODE_NOT_FOUND };
 const Node = struct {
     adj: ArrayList(u8),
     label: []const u8,
-    pos: u32,
     const Self = @This();
 
     pub fn agregar_nodo(self: *Self) !void{
@@ -21,7 +20,7 @@ const Node = struct {
         }
     }
 
-    pub fn agregar_adyacencia(self: *Self, pos:u32) void{
+    pub fn agregar_adyacencia(self: *Self, pos:usize) void{
         var resultado = self.adj.items[pos];
         resultado += 1;
         self.adj.items[pos] = resultado;
@@ -73,8 +72,6 @@ pub const Graph = struct {
         var nodo = Node{
             .adj = ArrayList(u8).init(self.allocator),
             .label = node_label,
-            .pos = self.tam,
-            
         };
 
         if (self.tam == 0){
@@ -92,7 +89,6 @@ pub const Graph = struct {
             try n.agregar_nodo();
             self.nodes_map.items[i] = n;
         }
-
         self.tam +=1;
         return true;
     }
@@ -118,22 +114,21 @@ pub const Graph = struct {
         if (!(self.contiene(node1)) or !(self.contiene(node2))) {
             return GraphError.NODE_NOT_FOUND;
         }
-        var node1_pos: u32 = undefined;
-        var node2_pos: u32 = undefined;
+        var node1_pos: usize = undefined;
+        var node2_pos: usize = undefined;
         
-        for (self.nodes_map.items) | nodo | {
+        for (self.nodes_map.items, 0..) | nodo, i| {
             if (std.mem.eql(u8, nodo.label, node1)){
-                node1_pos = nodo.pos;
+                node1_pos = i;
                 break;
             }
         
         }
-        for (self.nodes_map.items) | nodo | {
+        for (self.nodes_map.items, 0..) | nodo, i| {
             if ((std.mem.eql(u8, nodo.label, node2))){
-                node2_pos = nodo.pos;
-                break;   
-            }
-           
+                node2_pos = i;
+                break;
+            }           
         }
         self.nodes_map.items[node1_pos].agregar_adyacencia(node2_pos);
         self.nodes_map.items[node2_pos].agregar_adyacencia(node1_pos);
@@ -147,10 +142,10 @@ pub const Graph = struct {
         if (!(self.contiene(node1)) or !(self.contiene(node2))) {
             return false;
         }
-        var node2_pos: u32 = undefined;
-        for (self.nodes_map.items) | nodo |{
+        var node2_pos: usize = undefined;
+        for (self.nodes_map.items, 0..) | nodo, i |{
             if (std.mem.eql(u8, nodo.label, node2)){
-                node2_pos = nodo.pos;
+                node2_pos = i;
             }
         }
 
@@ -172,18 +167,18 @@ pub const Graph = struct {
         if (!(self.contiene(node1)) or !(self.contiene(node2))) {
             return GraphError.NODE_NOT_FOUND;
         }
-        var node1_pos: u32 = undefined;
-        var node2_pos: u32 = undefined;
+        var node1_pos: usize = undefined;
+        var node2_pos: usize = undefined;
         
-        for (self.nodes_map.items) | nodo | {
+        for (self.nodes_map.items, 0..) | nodo, i |{
             if (std.mem.eql(u8, nodo.label, node1)){
-                node1_pos = nodo.pos;
+                node1_pos = i;
                 break;
             }
         }
-        for (self.nodes_map.items) | nodo | {
+        for (self.nodes_map.items, 0..) | nodo, i |{
             if ((std.mem.eql(u8, nodo.label, node2))){
-                node2_pos = nodo.pos;
+                node2_pos = i;
                 break;   
             }
            
