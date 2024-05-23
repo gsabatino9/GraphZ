@@ -5,16 +5,10 @@ const Allocator = std.mem.Allocator;
 
 const GraphError = error{ NODE_NOT_EXISTS, EDGE_NOT_EXISTS, NODE_NOT_FOUND };
 
-// []
-// [{a, [1]}]
-//  [{a, [1,0]} , {b, [0,1]}]
-// 
-//
-
 const Node = struct {
     adj: ArrayList(u8),
     label: []const u8,
-    pos: ?u32,
+    pos: u32,
     const Self = @This();
 
     pub fn agregar_nodo(self: *Self) !void{
@@ -52,11 +46,9 @@ pub const Graph = struct {
 
     pub fn deinit(self: *Self) void {
         print("Elimino el grafo\n", .{});
-        for (self.nodes_map.items) | nodo |{
-            //const nodo = self.nodes_map.items[n];
+        for (self.nodes_map.items) | nodo |{   
             nodo.adj.deinit();
             //nodo.label.deinit();
-            print("nodo borrado {any}\n",.{nodo.label});
         }
         self.nodes_map.deinit();
     }
@@ -85,29 +77,24 @@ pub const Graph = struct {
             
         };
 
-        try nodo.agregar_nodo();
-        try self.nodes_map.append(nodo);
-        self.tam += 1;
-
-        print("array del nodo {any}, {any}\n",.{nodo.label,nodo.adj.items});
-         
-        //si es el primero que agrego, ya está terminado
-        if (self.tam == 1){
+        if (self.tam == 0){
+            try nodo.agregar_nodo();
+            try self.nodes_map.append(nodo);
+            self.tam +=1;
             return true;
         }
 
-        try nodo.iniciar_nodo(self.tam); //hay una de más
-        //sino itero sobre todos los nodos para agrarle el nuevo
-        
-        for (self.nodes_map.items) | nodo_aux | {
+        try nodo.iniciar_nodo(self.tam);
+        try self.nodes_map.append(nodo);
+
+        for (self.nodes_map.items, 0..) | nodo_aux, i |{
             var n = nodo_aux;
-            try n.agregar_nodo(); //hay una de más
+            try n.agregar_nodo();
+            self.nodes_map.items[i] = n;
         }
-        print("array del nodo {any}, {any}\n",.{nodo.label,nodo.adj.items});
-                
-        //print("Todo salió bien {any}\n",.{node_label});
+
+        self.tam +=1;
         return true;
-        
     }
 
     pub fn contains(self: *Self, node_label: []const u8) bool {
@@ -127,22 +114,29 @@ pub const Graph = struct {
     /// no existan
     /// Esta implementación es para grafos no dirigidos
     pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) !void {
-        // si no existen los nodos, devuelvo error
+        // si no existen los nodos, devuelvo error 
         if (!(self.contiene(node1)) and !(self.contiene(node2))) {
             return GraphError.NODE_NOT_FOUND;
         }
-        //var contador = 0;
-        for (self.nodes_map.items) | nodo | {
-            if ((std.mem.eql(u8, nodo.label, node1)) and (std.mem.eql(u8, nodo.label, node2))){
-                var aux = nodo;
-                aux.agregar_adyacencia(nodo.pos.?);
-            //    contador += 1;
-            }
-            //if (contador == 2){
-            //    return;
-            //}
-        }
+        var node1_pos: u32 = undefined;
+        var node2_pos: u32 = undefined;
         
+        for (self.nodes_map.items) | nodo | {
+            if (std.mem.eql(u8, nodo.label, node1)){
+                node1_pos = nodo.pos;
+                break;
+            }
+        
+        }
+        for (self.nodes_map.items) | nodo | {
+            if ((std.mem.eql(u8, nodo.label, node2))){
+                node2_pos = nodo.pos;
+                break;   
+            }
+           
+        }
+        self.nodes_map.items[node1_pos].agregar_adyacencia(node2_pos);
+        self.nodes_map.items[node2_pos].agregar_adyacencia(node1_pos);
     }
 
     /// devuelve true en caso de que el eje exista, false en caso de que no
@@ -150,22 +144,18 @@ pub const Graph = struct {
     /// en este caso no es dirigido
     pub fn edgeExists(self: *Self, node1: []const u8, node2: []const u8) bool {
        // si no existen los nodos, devuelvo error
-        if (!(self.contiene(node1)) and !(self.contiene(node2))) {
+        if (!(self.contiene(node1)) or !(self.contiene(node2))) {
             return false;
-            //return GraphError.NODE_NOT_FOUND
         }
         var node2_pos: u32 = undefined;
         for (self.nodes_map.items) | nodo |{
             if (std.mem.eql(u8, nodo.label, node2)){
-                node2_pos = nodo.pos.?;
-                print("posicion del nodo 2, {any} y array {any}\n",.{nodo.pos, nodo.adj.items});
+                node2_pos = nodo.pos;
             }
         }
 
-        //print("posicion de los nodos, {u32}, {u32}",.{})
         for (self.nodes_map.items) | nodo | {
             if (std.mem.eql(u8, nodo.label, node1)){
-                print("posicion del nodo 1, {any} y array {any}\n",.{nodo.pos, nodo.adj.items});
                 return (nodo.adj.items[node2_pos] >= 1);
             }
         }
@@ -179,19 +169,18 @@ const testing = std.testing;
 test "Test agrego nodos y existen\n" {
     const allocator = testing.allocator;
     var graph = Graph.init(allocator);
-    //defer graph.deinit();
+    defer graph.deinit();
 
     _ = try graph.addNode("A");
     _ = try graph.addNode("B");
     _ = try graph.addEdge("A", "B");
 
     try testing.expect(graph.nodeExists("A") == true);
-    //try testing.expect(graph.edgeExists("A", "B") == true);
-    //try testing.expect(graph.nodeExists("B") == true);
-    //try testing.expect(graph.nodeExists("C") == false);
-    //try testing.expect(graph.edgeExists("A", "B") == true);
-    //try testing.expect(graph.edgeExists("B", "A") == true);
-    //try testing.expect(graph.edgeExists("A", "C") == false);
-    //try testing.expect(graph.edgeExists("C", "A") == false);
-    graph.deinit();
+    try testing.expect(graph.edgeExists("A", "B") == true);
+    try testing.expect(graph.nodeExists("B") == true);
+    try testing.expect(graph.nodeExists("C") == false);
+    try testing.expect(graph.edgeExists("A", "B") == true);
+    try testing.expect(graph.edgeExists("B", "A") == true);
+    try testing.expect(graph.edgeExists("A", "C") == false);
+    try testing.expect(graph.edgeExists("C", "A") == false);
 }
