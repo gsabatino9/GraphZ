@@ -115,7 +115,7 @@ pub const Graph = struct {
     /// Esta implementación es para grafos no dirigidos
     pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) !void {
         // si no existen los nodos, devuelvo error 
-        if (!(self.contiene(node1)) and !(self.contiene(node2))) {
+        if (!(self.contiene(node1)) or !(self.contiene(node2))) {
             return GraphError.NODE_NOT_FOUND;
         }
         var node1_pos: u32 = undefined;
@@ -162,6 +162,35 @@ pub const Graph = struct {
         return false;
     }
 
+    //pub fn deleteNode(self: *Self, node1: []const u8) !void{
+
+//        return;
+//    }
+
+    pub fn deleteEdge(self: *Self, node1: []const u8, node2: []const u8) !void {
+        // si no existen los nodos, devuelvo error 
+        if (!(self.contiene(node1)) or !(self.contiene(node2))) {
+            return GraphError.NODE_NOT_FOUND;
+        }
+        var node1_pos: u32 = undefined;
+        var node2_pos: u32 = undefined;
+        
+        for (self.nodes_map.items) | nodo | {
+            if (std.mem.eql(u8, nodo.label, node1)){
+                node1_pos = nodo.pos;
+                break;
+            }
+        }
+        for (self.nodes_map.items) | nodo | {
+            if ((std.mem.eql(u8, nodo.label, node2))){
+                node2_pos = nodo.pos;
+                break;   
+            }
+           
+        }
+        self.nodes_map.items[node1_pos].adj.items[node2_pos] = 0;
+        self.nodes_map.items[node2_pos].adj.items[node1_pos] = 0;
+    }
 };
 
 
@@ -183,4 +212,18 @@ test "Test agrego nodos y existen\n" {
     try testing.expect(graph.edgeExists("B", "A") == true);
     try testing.expect(graph.edgeExists("A", "C") == false);
     try testing.expect(graph.edgeExists("C", "A") == false);
+
+    _ = try graph.addNode("C");
+    _ = try graph.addEdge("A", "C");
+    try testing.expect(graph.edgeExists("A", "C") == true);
+    try testing.expect(graph.edgeExists("C", "A") == true);
+
+    _ = try graph.addEdge("A", "C");
+    try testing.expect(graph.edgeExists("A", "C") == true);
+
+    _ = try graph.addEdge("A", "A");
+
+    _ = try graph.deleteEdge("A", "B");
+    try testing.expect(graph.edgeExists("A", "B") == false);
+    try testing.expect(graph.edgeExists("B", "A") == false);
 }
