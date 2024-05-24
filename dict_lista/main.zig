@@ -5,7 +5,7 @@ const get_relation = @import("utils.zig").get_relation;
 const Graph = @import("graph.zig").Graph;
 
 pub fn loop_add_relations(allocator: Allocator) !void {
-    var graph = Graph.init(allocator);
+    var graph = Graph.init_directed(allocator);
     defer graph.deinit();
     var list_inserted = std.ArrayList([]const u8).init(allocator);
     defer list_inserted.deinit();

@@ -25,6 +25,14 @@ pub const Graph = struct {
         return .{ .nodes_map = NodesMap.init(allocator), .adjacents_map = AdjacentsMap.init(allocator), .allocator = allocator, .is_directed = is_directed };
     }
 
+    pub fn init_undirected(allocator: Allocator) Self {
+        return Self.init(allocator, GraphType.Undirected);
+    }
+
+    pub fn init_directed(allocator: Allocator) Self {
+        return Self.init(allocator, GraphType.Directed);
+    }
+
     pub fn deinit(self: *Self) void {
         self.adjacents_map.deinit();
         self.nodes_map.deinit();
