@@ -17,8 +17,8 @@ pub fn loop_add_relations(allocator: Allocator) !void {
         const source = relation[0];
         const target = relation[1];
 
-        const s_added = try graph.add(source);
-        const t_added = try graph.add(target);
+        const s_added = try graph.addNode(source);
+        const t_added = try graph.addNode(target);
 
         try graph.addEdge(source, target);
 
@@ -36,20 +36,6 @@ pub fn loop_add_relations(allocator: Allocator) !void {
 
     print("{}\n", .{graph.countNodes()});
     print("{}\n", .{graph.countEdges()});
-
-    var list = std.ArrayList([]const u8).init(allocator);
-    defer list.deinit();
-
-    var it = try graph.dfsIterator("a");
-    defer it.deinit();
-
-    while (try it.next()) |item| {
-        try list.append(graph.lookup(item).?);
-    }
-
-    for (list.items) |item| {
-        print("{s}\n", .{item});
-    }
 
     for (list_inserted.items) |item| {
         allocator.free(item);

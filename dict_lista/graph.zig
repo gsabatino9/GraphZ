@@ -1,223 +1,153 @@
 const std = @import("std");
+const print = std.debug.print;
 const ArrayList = std.ArrayList;
 const AutoHashMap = std.hash_map.AutoHashMap;
 const StringContext = std.hash_map.StringContext;
 const math = std.math;
 const Allocator = std.mem.Allocator;
+const AdjacentsMap = @import("adjacents/adjacents.zig").AdjacentsMap;
+const GraphError = @import("errors.zig").GraphError;
 
-pub const GraphError = error{
-    VertexNotFoundError,
+const NodesMapType = AutoHashMap(u64, []const u8);
+const NodesMap = struct {
+    map: NodesMapType,
+    ctx: StringContext,
+    const Self = @This();
+    const Size = NodesMapType.Size;
+
+    pub fn init(allocator: Allocator) Self {
+        return .{ .map = NodesMapType.init(allocator), .ctx = undefined };
+    }
+
+    pub fn deinit(self: *Self) void {
+        self.map.deinit();
+    }
+
+    pub fn mapNodeLabel(self: *Self, node_label: []const u8) u64 {
+        return self.ctx.hash(node_label);
+    }
+
+    pub fn addNodeLabel(self: *Self, node_label: []const u8) !?u64 {
+        const node_hash = self.mapNodeLabel(node_label);
+        if (self.map.contains(node_hash)) {
+            return null;
+        }
+
+        try self.map.put(node_hash, node_label);
+        return node_hash;
+    }
+
+    pub fn containsLabel(self: *Self, node_label: []const u8) bool {
+        const node_hash = self.mapNodeLabel(node_label);
+        return self.map.contains(node_hash);
+    }
+
+    pub fn lookup(self: *Self, node_hash: u64) ![]const u8 {
+        const node_label = self.map.get(node_hash);
+        if (node_label) |label| {
+            return label;
+        }
+
+        return GraphError.NODE_NOT_EXISTS;
+    }
+
+    pub fn countNodes(self: *Self) Size {
+        return self.map.count();
+    }
 };
 
-// lo siguiente sirve en caso de querer usar atributos en la relación
-// ej: weight, algún label, etc
-pub const Adjacents = ArrayList(u64);
-pub const AdjacentsMap = AutoHashMap(u64, Adjacents);
-
-// lo siguiente sirve para guardar atributos en el nodo.
-// Por ahora solo tiene el label, pero se puede extender más.
-pub const NodesMap = AutoHashMap(u64, []const u8);
-
 pub const Graph = struct {
+    nodes_map: NodesMap,
+    adjacents_map: AdjacentsMap,
     allocator: Allocator,
-    ctx: StringContext,
-    adj: AdjacentsMap,
-    values: NodesMap,
-
     const Self = @This();
     const Size = AdjacentsMap.Size;
 
     pub fn init(allocator: Allocator) Self {
-        return .{
-            .allocator = allocator,
-            .ctx = undefined,
-            .adj = AdjacentsMap.init(allocator),
-            .values = NodesMap.init(allocator),
-        };
+        return .{ .nodes_map = NodesMap.init(allocator), .adjacents_map = AdjacentsMap.init(allocator), .allocator = allocator };
     }
 
     pub fn deinit(self: *Self) void {
-        var it = self.adj.iterator();
-        while (it.next()) |kv| {
-            kv.value_ptr.deinit();
-        }
-        self.adj.deinit();
-        self.values.deinit();
-        self.* = undefined;
+        self.adjacents_map.deinit();
+        self.nodes_map.deinit();
     }
 
-    /// la función devuelve true en caso de haber insertado
-    /// el nodo. false en caso de encontrarse presente.
-    pub fn add(self: *Self, node_label: []const u8) !bool {
-        const h = self.ctx.hash(node_label);
-
-        // si ya existe el nodo, no hago nada
-        if (self.adj.contains(h)) {
-            return false;
-        }
-
-        try self.adj.put(h, Adjacents.init(self.allocator));
-        try self.values.put(h, node_label);
-        return true;
-    }
-
-    pub fn contains(self: *Self, node_label: []const u8) bool {
-        return self.values.contains(self.ctx.hash(node_label));
-    }
-
-    pub fn lookup(self: *Self, hash: u64) ?[]const u8 {
-        return self.values.get(hash);
-    }
-
-    pub fn addEdge(self: *Self, label1: []const u8, label2: []const u8) !void {
-        const h1 = self.ctx.hash(label1);
-        const h2 = self.ctx.hash(label2);
-
-        const map1 = self.adj.getPtr(h1) orelse return GraphError.VertexNotFoundError;
-        const map2 = self.adj.getPtr(h2) orelse return GraphError.VertexNotFoundError;
-
-        try map1.append(h2);
-        try map2.append(h1);
-    }
-
-    pub fn edgeExists(self: *const Self, label1: []const u8, label2: []const u8) bool {
-        const h1 = self.ctx.hash(label1);
-        const h2 = self.ctx.hash(label2);
-
-        const map1 = self.adj.getPtr(h1);
-        if (map1) |adj1| {
-            for (adj1.items) |item| {
-                if (item == h2) {
-                    return true;
-                }
-            }
+    /// retorna true si lo agrega, false si ya existe
+    pub fn addNode(self: *Self, node: []const u8) !bool {
+        const node_hash = try self.nodes_map.addNodeLabel(node);
+        if (node_hash) |h| {
+            _ = try self.adjacents_map.addNode(h);
+            return true;
         }
         return false;
     }
 
+    pub fn contains(self: *Self, node: []const u8) bool {
+        return self.nodes_map.containsLabel(node);
+    }
+
+    pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) !void {
+        if (!(self.nodes_map.containsLabel(node1) and self.nodes_map.containsLabel(node2))) {
+            return GraphError.NODE_NOT_EXISTS;
+        }
+
+        const node_hash1 = self.nodes_map.mapNodeLabel(node1);
+        const node_hash2 = self.nodes_map.mapNodeLabel(node2);
+        try self.adjacents_map.addEdge(node_hash1, node_hash2);
+    }
+
+    pub fn edgeExists(self: *Self, node1: []const u8, node2: []const u8) bool {
+        const node_hash1 = self.nodes_map.mapNodeLabel(node1);
+        const node_hash2 = self.nodes_map.mapNodeLabel(node2);
+
+        return self.adjacents_map.edgeExists(node_hash1, node_hash2);
+    }
+
     pub fn countNodes(self: *Self) Size {
-        return self.values.count();
+        return self.nodes_map.countNodes();
     }
 
     pub fn countEdges(self: *Self) Size {
-        var amount_edges: Size = 0;
-        var it = self.adj.iterator();
-        while (it.next()) |node| {
-            amount_edges += @intCast(node.value_ptr.items.len);
-        }
-
-        return amount_edges / 2;
+        return self.adjacents_map.countEdges();
     }
-
-    pub fn dfsIterator(self: *const Self, label_to_start: []const u8) !DFSIterator {
-        const h = self.ctx.hash(label_to_start);
-
-        if (!self.values.contains(h)) {
-            return GraphError.VertexNotFoundError;
-        }
-
-        const stack = std.ArrayList(u64).init(self.allocator);
-        const visited = std.AutoHashMap(u64, void).init(self.allocator);
-
-        return DFSIterator{
-            .g = self,
-            .stack = stack,
-            .visited = visited,
-            .current = h,
-        };
-    }
-
-    pub const DFSIterator = struct {
-        g: *const Self,
-        stack: std.ArrayList(u64),
-        visited: std.AutoHashMap(u64, void),
-        current: ?u64,
-
-        pub fn deinit(it: *DFSIterator) void {
-            it.stack.deinit();
-            it.visited.deinit();
-        }
-
-        pub fn next(it: *DFSIterator) !?u64 {
-            if (it.current == null) return null;
-
-            const result = it.current orelse unreachable;
-            try it.visited.put(result, {});
-
-            if (it.g.adj.getPtr(result)) |map| {
-                for (map.items) |target| {
-                    if (!it.visited.contains(target)) {
-                        try it.stack.append(target);
-                    }
-                }
-            }
-
-            it.current = null;
-            while (it.stack.popOrNull()) |nextVal| {
-                if (!it.visited.contains(nextVal)) {
-                    it.current = nextVal;
-                    break;
-                }
-            }
-
-            return result;
-        }
-    };
 };
 
 const testing = std.testing;
-const print = std.debug.print;
-test "Test add nodes" {
+test "Test nodes map" {
     const allocator = testing.allocator;
-    var g = Graph.init(allocator);
-    defer g.deinit();
+    var nodes_map = NodesMap.init(allocator);
+    defer nodes_map.deinit();
 
-    _ = try g.add("A");
-    _ = try g.add("B");
+    try testing.expect(nodes_map.mapNodeLabel("a") == 2941419223392617777);
 
-    const contains_A: bool = g.contains("A");
-    const contains_B: bool = g.contains("B");
+    _ = try nodes_map.addNodeLabel("a");
+    try testing.expect(nodes_map.containsLabel("a") == true);
 
-    try testing.expect(contains_A == true);
-    try testing.expect(contains_B == true);
-    try testing.expect(g.countNodes() == 2);
+    const lookup_value = try nodes_map.lookup(2941419223392617777);
+    try testing.expect(std.mem.eql(u8, lookup_value, "a"));
+
+    try testing.expect(nodes_map.lookup(1234) == GraphError.NODE_NOT_EXISTS);
 }
 
-test "Test add edges" {
+test "Test graph" {
     const allocator = testing.allocator;
-    var g = Graph.init(allocator);
-    defer g.deinit();
+    var graph = Graph.init(allocator);
+    defer graph.deinit();
 
-    _ = try g.add("A");
-    _ = try g.add("B");
+    _ = try graph.addNode("a");
+    _ = try graph.addNode("b");
 
-    try g.addEdge("A", "B");
+    try testing.expect(graph.contains("a") == true);
+    try testing.expect(graph.contains("b") == true);
+    try testing.expect(graph.contains("c") == false);
 
-    const contains_A_B = g.edgeExists("A", "B");
-    const not_contains_A_C = g.edgeExists("A", "C");
+    try graph.addEdge("a", "b");
+    try testing.expect(graph.edgeExists("a", "b") == true);
+    try testing.expect(graph.edgeExists("a", "c") == false);
 
-    try testing.expect(contains_A_B == true);
-    try testing.expect(not_contains_A_C == false);
-    try testing.expect(g.countEdges() == 1);
-}
+    // const err = graph.addEdge("a", "c");
+    // try testing.expectError(GraphError.NODE_NOT_EXISTS, err);
 
-test "Test dfs" {
-    const allocator = testing.allocator;
-    var g = Graph.init(allocator);
-    defer g.deinit();
-
-    _ = try g.add("A");
-    _ = try g.add("B");
-
-    try g.addEdge("A", "B");
-
-    var it = try g.dfsIterator("A");
-    defer it.deinit();
-
-    print("\nDFS iteration: ", .{});
-    while (try it.next()) |item| {
-        const elem = g.lookup(item).?;
-        print("{s}, ", .{elem});
-    }
-    print("\n", .{});
+    try testing.expect(graph.countNodes() == 2);
+    try testing.expect(graph.countEdges() == 1);
 }

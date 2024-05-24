@@ -5,11 +5,7 @@ const AutoHashMap = std.hash_map.AutoHashMap;
 const StringContext = std.hash_map.StringContext;
 const math = std.math;
 const Allocator = std.mem.Allocator;
-
-pub const GraphError = error{
-    VertexNotFoundError,
-    EdgeNotFoundError,
-};
+const GraphError = @import("errors.zig").GraphError;
 
 // lo siguiente sirve en caso de querer usar atributos en la relación
 // ej: weight, algún label, etc
