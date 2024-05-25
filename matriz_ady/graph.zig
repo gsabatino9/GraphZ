@@ -222,13 +222,10 @@ pub const Graph = struct {
     pub fn countEdges(self: *Self) u32 {
         var resultado: u32 = 0;
         for (self.nodes_map.items) | nodo |{
-            //print("label {any}\n",.{nodo.label});
             for (nodo.adj.items) | adj |{
-                //print("valor = {any}\n",.{adj});
                 resultado += adj;
             }
         }
-        //print("resultado = {any}\n",.{resultado/2});
         return resultado/2;
     }
 };
@@ -242,13 +239,14 @@ test "Test agrego nodos y existen\n" {
 
     _ = try graph.addNode("A");
     _ = try graph.addNode("B");
+    try testing.expect(graph.countNodes() == 2);
+
     _ = try graph.addEdge("A", "B");
     try testing.expect(graph.countEdges() == 1);
-
     _ = try graph.addNode("A");
+    try testing.expect(graph.countNodes() == 2);
 
     try testing.expect(graph.nodeExists("A") == true);
-    try testing.expect(graph.edgeExists("A", "B") == true);
     try testing.expect(graph.nodeExists("B") == true);
     try testing.expect(graph.nodeExists("C") == false);
     try testing.expect(graph.edgeExists("A", "B") == true);
@@ -257,6 +255,8 @@ test "Test agrego nodos y existen\n" {
     try testing.expect(graph.edgeExists("C", "A") == false);
 
     _ = try graph.addNode("C");
+    try testing.expect(graph.countNodes() == 3);
+
     _ = try graph.addEdge("A", "C");
     try testing.expect(graph.countEdges() == 2);
     try testing.expect(graph.edgeExists("A", "C") == true);
@@ -280,5 +280,5 @@ test "Test agrego nodos y existen\n" {
     try testing.expect(graph.countEdges() == 0);
 
     try testing.expect(graph.countNodes() == 2);
-    try testing.expect(graph.edgeExists("C", "A") == false);
+    
 }
