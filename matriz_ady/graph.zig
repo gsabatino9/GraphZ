@@ -139,7 +139,7 @@ pub const Graph = struct {
         return true;
     }
 
-    /// devuelve true en caso de que el eje exista, false en caso de que no
+    /// devuelve true en caso de que la arista exista, false en caso de que no
     /// la implementación cambia si el grafo es dirigido o no
     /// en este caso no es dirigido
     pub fn edgeExists(self: *Self, node1: []const u8, node2: []const u8) bool {
@@ -173,17 +173,20 @@ pub const Graph = struct {
         for (self.nodes_map.items, 0..) | nodo, i| {
             if (std.mem.eql(u8, nodo.label, node1)){
                 node_pos = i;
-                
-                var n = self.nodes_map.orderedRemove(i);
-                //label = n.label; //esta linea falla
-                n.deinit();
             }
         }
-        for (self.nodes_map.items) | nodo| {
-            var n = nodo;
-            _ = n.adj.orderedRemove(node_pos);
-        }
+        var n = self.nodes_map.orderedRemove(node_pos);
+        //const label = n.label;
+        //label = n.label; //esta linea falla
+        n.deinit();
+        
+        for (self.nodes_map.items, 0..) | nodo, i| {
+            var aux = nodo;
+            _ = aux.adj.orderedRemove(node_pos);
 
+            self.nodes_map.items[i] = aux;
+        }
+        self.tam = self.tam - 1;
         //return label;
     }
 
@@ -211,6 +214,23 @@ pub const Graph = struct {
         self.nodes_map.items[node1_pos].adj.items[node2_pos] = 0;
         self.nodes_map.items[node2_pos].adj.items[node1_pos] = 0;
     }
+
+    pub fn countNodes(self: *Self) u32 {
+        return self.tam;
+    }
+
+    pub fn countEdges(self: *Self) u32 {
+        var resultado: u32 = 0;
+        for (self.nodes_map.items) | nodo |{
+            //print("label {any}\n",.{nodo.label});
+            for (nodo.adj.items) | adj |{
+                //print("valor = {any}\n",.{adj});
+                resultado += adj;
+            }
+        }
+        //print("resultado = {any}\n",.{resultado/2});
+        return resultado/2;
+    }
 };
 
 
@@ -223,6 +243,9 @@ test "Test agrego nodos y existen\n" {
     _ = try graph.addNode("A");
     _ = try graph.addNode("B");
     _ = try graph.addEdge("A", "B");
+    try testing.expect(graph.countEdges() == 1);
+
+    _ = try graph.addNode("A");
 
     try testing.expect(graph.nodeExists("A") == true);
     try testing.expect(graph.edgeExists("A", "B") == true);
@@ -235,21 +258,27 @@ test "Test agrego nodos y existen\n" {
 
     _ = try graph.addNode("C");
     _ = try graph.addEdge("A", "C");
+    try testing.expect(graph.countEdges() == 2);
     try testing.expect(graph.edgeExists("A", "C") == true);
     try testing.expect(graph.edgeExists("C", "A") == true);
 
     _ = try graph.addEdge("A", "C");
+    try testing.expect(graph.countEdges() == 3);
     try testing.expect(graph.edgeExists("A", "C") == true);
 
     _ = try graph.addEdge("A", "A");
+    try testing.expect(graph.countEdges() == 4);
 
     _ = try graph.deleteEdge("A", "B");
     try testing.expect(graph.edgeExists("A", "B") == false);
     try testing.expect(graph.edgeExists("B", "A") == false);
-
+    try testing.expect(graph.countEdges() == 3);
 
     _ = try graph.deleteNode("A");
     try testing.expect(graph.nodeExists("A") == false);
     try testing.expect(graph.edgeExists("C", "A") == false);
-    
+    try testing.expect(graph.countEdges() == 0);
+
+    try testing.expect(graph.countNodes() == 2);
+    try testing.expect(graph.edgeExists("C", "A") == false);
 }
