@@ -3,6 +3,7 @@
 ## Integrantes
 - Gonzalo Sabatino. Padrón 104609
 - Alejandro Balladares. Padrón 101118
+- Facundo Polech. Padrón 108652
 
 ## Objetivo del proyecto
 El objetivo del proyecto es utilizar el lenguaje de programación [Zig](https://ziglang.org/), identificando fortalezas y debilidades del mismo, además de una apreciación de cada uno de los miembros del equipo por los features más relevantes que o bien se encuentran, o bien están faltantes en el lenguaje.
