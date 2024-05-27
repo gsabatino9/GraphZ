@@ -1,6 +1,7 @@
 ## Notas
 - Investigar cómo crear tipos de forma más estándar para zig (directed, undirected, weighted, unweighted)
     - seguramente el tipo unmanaged sea clave
+- Investigar como esta codeado el compilador y que ventajas da para el informe final: https://ziglang.org/learn/overview/
 
 
 ## Semana 27/05
