@@ -31,6 +31,15 @@ const Node = struct {
         self.ady_map.deinit();
     }
 
+    pub fn deinit(self: *Self, allocator: Allocator) void {
+        var it = self.ady_map.iterator();
+        while (it.next()) |entry| {
+            allocator.free(entry.key_ptr.*);
+            allocator.free(entry.value_ptr.*);
+        }
+        self.ady_map.deinit();
+    }
+
     // devuelve false en caso de no estar el ady, true en caso de que si
     pub fn adyExist(self: *Self, node_label: []const u8) bool {
         return self.ady_map.contains(node_label);
