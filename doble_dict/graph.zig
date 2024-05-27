@@ -78,9 +78,9 @@ pub const Graph = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        var it = self.nodes_map.iterator();
-        while (it.next()) |entry| {
-            entry.value_ptr.*.deinitAdy();
+        var it = self.nodes_map.valueIterator();
+        while (it.next()) |map| {
+            map.deinitAdy();
             // self.allocator.free(entry.key_ptr.*);
             // self.allocator.free(entry.value_ptr.*);
         }
@@ -122,7 +122,7 @@ pub const Graph = struct {
     /// Conecta 2 nodos, devuelve GraphError.NODE_NOT_EXISTS en caso de que alguno de los dos nodos no existan
     pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) !void {
         if (!self.edgeExists(node1, node2)) {
-            var node_1: Node = self.nodes_map.get(node1) orelse unreachable;
+            var node_1 = self.nodes_map.getPtr(node1).?;
             try node_1.addAdy(node2);
         }
         // grafo dirigido -> si se quiere no dirigido simplemente agregar 2 aristas por union
