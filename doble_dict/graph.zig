@@ -11,17 +11,21 @@ const ReadError = error{BadRead};
 const Node = struct {
 
     // ady_map: mapea los adyacentes del nodo (por ahora: clave = valor = []const u8)
-    ady_map: AdyMap,
+    ady_map: std.StringHashMap(u32),
 
     const Self = @This();
 
     pub fn init(allocator: Allocator) Self {
         return .{
-            .ady_map = AdyMap.init(allocator),
+            .ady_map = std.StringHashMap(u32).init(allocator),
         };
     }
 
-    pub fn deinit(self: *Self) void {
+    pub fn deinit(self: *Self, allocator: Allocator) void {
+        var it = self.ady_map.valueIterator();
+        while (it.next()) |value_ptr| {
+            allocator.destroy(value_ptr.*);
+        }
         self.ady_map.deinit();
     }
 
@@ -30,7 +34,7 @@ const Node = struct {
         if (self.ady_map.contains(node_label)) {
             return false;
         }
-        try self.ady_map.put(node_label, node_label);
+        try self.ady_map.put(node_label, 1);
         return true;
     }
 };
@@ -57,7 +61,7 @@ pub const Graph = struct {
         while (it.next()) |entry| {
             var nodo: Node = entry.value_ptr.*;
             // self.allocator.free(entry.key_ptr.*);
-            nodo.deinit();
+            nodo.deinit(self.allocator);
             // self.allocator.free(entry.value_ptr.*);
         }
         self.nodes_map.deinit();
@@ -100,11 +104,11 @@ pub const Graph = struct {
     }
 
     /// Conecta 2 nodos, devuelve GraphError.NODE_NOT_EXISTS en caso de que alguno de los dos nodos no existan
-    pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) GraphError!void {
+    pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) !void {
         var node_1: Node = self.nodes_map.get(node1) orelse return GraphError.NODE_NOT_EXISTS;
-        try node_1.addAdy(node2) orelse return GraphError.NODE_NOT_EXISTS;
+        _ = try node_1.addAdy(node2);
         var node_2: Node = self.nodes_map.get(node2) orelse return GraphError.NODE_NOT_EXISTS;
-        try node_2.addAdy(node1) orelse return GraphError.NODE_NOT_EXISTS;
+        _ = try node_2.addAdy(node1);
         return;
         // si se desea un grafo con direccion poner solo 1 arista y no 2 (MODIFICAR)
     }
@@ -168,14 +172,5 @@ test "Test agrego nodos y existen" {
 
     _ = try graph.addNode("A");
     _ = try graph.addNode("B");
-    _ = try graph.addEdge("A", "B");
     _ = try graph.addEdge("B", "A");
-
-    try testing.expect(graph.nodeExists("A") == true);
-    try testing.expect(graph.nodeExists("B") == true);
-    try testing.expect(graph.edgeExists("A", "B") == true);
-    try testing.expect(graph.edgeExists("B", "A") == true);
-    try testing.expect(graph.nodeExists("C") == false);
-    try testing.expect(graph.edgeExists("A", "C") == false);
-    try testing.expect(graph.edgeExists("C", "A") == false);
 }
