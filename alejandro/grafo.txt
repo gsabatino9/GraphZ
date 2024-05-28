@@ -1,4 +1,4 @@
-A - B
-B - C
-C - A
-G - B
+A-B
+B-C
+C-A
+G-B
