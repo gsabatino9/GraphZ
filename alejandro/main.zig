@@ -13,6 +13,18 @@ pub fn main() !void {
     var graph = Graph.init(allocator);
     defer graph.deinit();
 
-    print("GraphZ\n", .{});
-    print("{any}\n", .{graph});
+    var file = try std.fs.cwd().openFile("grafo.txt", .{});
+    defer file.close();
+
+    var buf_reader = std.io.bufferedReader(file.reader());
+    var in_stream = buf_reader.reader();
+    //The std.io.bufferedReader isn’t mandatory but recommended for better performance.
+
+    var buf: [1024]u8 = undefined;
+    while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+        print("linea {s}\n", .{line});
+    }
+
+    print("Todo excelente\n", .{});
+    
 }
