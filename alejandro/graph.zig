@@ -10,17 +10,17 @@ const Node = struct {
     label: []const u8,
     const Self = @This();
 
-    pub fn agregar_nodo(self: *Self) !void {
+    pub fn agregarNodo(self: *Self) !void {
         try self.adj.append(0);
     }
 
-    pub fn iniciar_nodo(self: *Self, tam: u32) !void {
+    pub fn iniciarNodo(self: *Self, tam: u32) !void {
         for (0..tam) |_| {
             try self.adj.append(0);
         }
     }
 
-    pub fn agregar_adyacencia(self: *Self, pos: usize) void {
+    pub fn agregarAdyacencia(self: *Self, pos: usize) void {
         var resultado = self.adj.items[pos];
         resultado += 1;
         self.adj.items[pos] = resultado;
@@ -55,7 +55,7 @@ pub const Graph = struct {
         self.nodes_map.deinit();
     }
 
-    pub fn contiene(self: *Self, valor: []const u8) bool {
+    pub fn auxContains(self: *Self, valor: []const u8) bool {
         if (self.tam == 0) return false;
 
         for (self.nodes_map.items) |nodo| {
@@ -66,44 +66,44 @@ pub const Graph = struct {
 
     /// la función devuelve true en caso de haber insertado
     /// el nodo. false en caso de encontrarse presente.
-    pub fn addNode(self: *Self, node_label: []const u8) !bool {
+    pub fn addNode(self: *Self, node: []const u8) !bool {
         // si ya existe el nodo, no hago nada
-        if (self.contiene(node_label)) {
+        if (self.auxContains(node)) {
             return false; //o true?
         }
         //creo el nodo
         var nodo = Node{
             .adj = ArrayList(u8).init(self.allocator),
-            .label = node_label,
+            .label = node,
         };
 
         if (self.tam == 0) {
-            try nodo.agregar_nodo();
+            try nodo.agregarNodo();
             try self.nodes_map.append(nodo);
             self.tam += 1;
             return true;
         }
 
-        try nodo.iniciar_nodo(self.tam);
+        try nodo.iniciarNodo(self.tam);
         try self.nodes_map.append(nodo);
 
         for (self.nodes_map.items, 0..) |nodo_aux, i| {
             var n = nodo_aux;
-            try n.agregar_nodo();
+            try n.agregarNodo();
             self.nodes_map.items[i] = n;
         }
         self.tam += 1;
         return true;
     }
 
-    pub fn contains(self: *Self, node_label: []const u8) bool {
-        return self.contiene(node_label);
+    pub fn contains(self: *Self, node: []const u8) bool {
+        return self.auxContains(node);
     }
 
     /// devuelve true en caso de que el nodo exista, false en caso de que no
-    pub fn nodeExists(self: *Self, node_label: []const u8) bool {
+    pub fn nodeExists(self: *Self, node: []const u8) bool {
         for (self.nodes_map.items) |nodo| {
-            if (std.mem.eql(u8, nodo.label, node_label)) return true;
+            if (std.mem.eql(u8, nodo.label, node)) return true;
         }
         return false;
     }
@@ -113,7 +113,7 @@ pub const Graph = struct {
     /// Esta implementación es para grafos no dirigidos
     pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) !bool {
         // si no existen los nodos, devuelvo error
-        if (!(self.contiene(node1)) or !(self.contiene(node2))) {
+        if (!(self.auxContains(node1)) or !(self.auxContains(node2))) {
             return GraphError.NODE_NOT_FOUND;
         }
         var node1_pos: usize = undefined;
@@ -132,8 +132,8 @@ pub const Graph = struct {
                 break;
             }
         }
-        self.nodes_map.items[node1_pos].agregar_adyacencia(node2_pos);
-        self.nodes_map.items[node2_pos].agregar_adyacencia(node1_pos);
+        self.nodes_map.items[node1_pos].agregarAdyacencia(node2_pos);
+        self.nodes_map.items[node2_pos].agregarAdyacencia(node1_pos);
         return true;
     }
 
@@ -142,7 +142,7 @@ pub const Graph = struct {
     /// en este caso no es dirigido
     pub fn edgeExists(self: *Self, node1: []const u8, node2: []const u8) bool {
         // si no existen los nodos, devuelvo error
-        if (!(self.contiene(node1)) or !(self.contiene(node2))) {
+        if (!(self.auxContains(node1)) or !(self.auxContains(node2))) {
             return false;
         }
         var node2_pos: usize = undefined;
@@ -161,7 +161,7 @@ pub const Graph = struct {
     }
 
     pub fn deleteNode(self: *Self, node1: []const u8) ![]const u8 {
-        if (!self.contiene(node1)) {
+        if (!self.auxContains(node1)) {
             return GraphError.NODE_NOT_FOUND;
         }
 
@@ -189,7 +189,7 @@ pub const Graph = struct {
 
     pub fn deleteEdge(self: *Self, node1: []const u8, node2: []const u8) !void {
         // si no existen los nodos, devuelvo error
-        if (!(self.contiene(node1)) or !(self.contiene(node2))) {
+        if (!(self.auxContains(node1)) or !(self.auxContains(node2))) {
             return GraphError.NODE_NOT_FOUND;
         }
         var node1_pos: usize = undefined;
