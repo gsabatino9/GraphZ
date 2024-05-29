@@ -5,7 +5,6 @@ const Graph = @import("graph.zig").Graph;
 
 const ReadError = error{BadRead};
 
-// implementación usando matriz de adyacencias
 pub fn main() !void {
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -23,16 +22,14 @@ pub fn main() !void {
 
     var buf: [1024]u8 = undefined;
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        try crearGrafo(line);
-        //print("linea {s}\n", .{line});
+        try agregarNodos(&graph, line);
+        //print("Grafo: {any},\n", .{graph.nodes_map.items});
     }
 
-    print("Todo excelente\n", .{});
-    
+    print("Grafo: {any},\n", .{graph.nodes_map.items});
 }
 
-pub fn crearGrafo( linea: []u8) !void { //grafo: Graph,
-
+pub fn agregarNodos(grafo: *Graph, linea: []u8) !void {
     var splits = std.mem.split(u8, linea, "-");
 
     const nodo1_next = splits.next();
@@ -47,7 +44,11 @@ pub fn crearGrafo( linea: []u8) !void { //grafo: Graph,
     }
     const nodo2 = nodo2_next.?;
 
-
-    print("nodo 1 {s}, nodo 2 {s}\n",.{nodo1, nodo2});
-
+    var graph = grafo;
+    const v1 = try graph.addNode(nodo1);
+    const v2 = try graph.addNode(nodo2);
+    const v3 = try graph.addEdge(nodo1, nodo2);
+    
+    print("nodo 1 {s}, nodo 2 {s}, {} {} {}\n",.{nodo1, nodo2, v1, v2, v3});
+    //return graph;
 }
