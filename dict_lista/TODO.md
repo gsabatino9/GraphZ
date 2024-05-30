@@ -1,2 +1,0 @@
-- Investigar cómo crear tipos de forma más estándar para zig (directed, undirected, weighted, unweighted)
-    - seguramente el tipo unmanaged sea clave

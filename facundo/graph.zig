@@ -23,11 +23,6 @@ const Node = struct {
     }
 
     pub fn deinitAdy(self: *Self) void {
-        // var it = self.ady_map.iterator();
-        // while (it.next()) |entry| {
-        //     self.allocator.free(entry.key_ptr.*);
-        //     self.allocator.free(entry.value_ptr.*);
-        // }
         self.ady_map.deinit();
     }
 
@@ -52,11 +47,12 @@ const Node = struct {
         }
     }
 
-    // devuelve false en caso de no borrar el ady, true en caso de que si
-    pub fn removeAdy(self: *Self, node_label: []const u8) !void {
+    // devuelve false en caso de no borrar el ady, true en caso de que si (si ady no existe envia true)
+    pub fn removeAdy(self: *Self, node_label: []const u8) bool {
         if (!self.adyExist(node_label)) {
-            try self.ady_map.remove(node_label, node_label);
+            return self.ady_map.remove(node_label);
         }
+        return true;
     }
 };
 
@@ -78,11 +74,9 @@ pub const Graph = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        var it = self.nodes_map.iterator();
-        while (it.next()) |entry| {
-            entry.value_ptr.*.deinitAdy();
-            // self.allocator.free(entry.key_ptr.*);
-            // self.allocator.free(entry.value_ptr.*);
+        var it = self.nodes_map.valueIterator();
+        while (it.next()) |map| {
+            map.deinitAdy();
         }
         self.nodes_map.deinit();
     }
@@ -102,11 +96,18 @@ pub const Graph = struct {
     /// devuelve true en caso de que el eje exista, false en caso de que no
     pub fn edgeExists(self: *Self, node1: []const u8, node2: []const u8) bool {
         if ((!self.nodeExists(node1) or !self.nodeExists(node2))) {
+            if (self.nodeExists(node1) and !self.nodeExists(node2)) {
+                var node_1: Node = self.nodes_map.get(node1) orelse unreachable;
+                _ = node_1.removeAdy(node2);
+            }
+            if (!self.nodeExists(node1) and self.nodeExists(node2)) {
+                var node_2: Node = self.nodes_map.get(node2) orelse unreachable;
+                _ = node_2.removeAdy(node1);
+            }
             return false;
         } else {
             return self.nodeAdyExists(node1, node2);
         }
-        // grafo dirigido -> si se quiere no dirigido simplemente agregar 2 aristas por union
     }
 
     /// devuelve false en caso de no insertar el nodo, true en caso de que si
@@ -122,9 +123,28 @@ pub const Graph = struct {
     /// Conecta 2 nodos, devuelve GraphError.NODE_NOT_EXISTS en caso de que alguno de los dos nodos no existan
     pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) !void {
         if (!self.edgeExists(node1, node2)) {
-            var node_1 = self.nodes_map.getPtr(node1).?;
+            var node_1 = self.nodes_map.getPtr(node1) orelse unreachable;
             try node_1.addAdy(node2);
         }
-        // grafo dirigido -> si se quiere no dirigido simplemente agregar 2 aristas por union
+    }
+
+    /// Borra el nodo correspondiente con sus adyacentes (las aristas dirigidas al nodo permanecen hasta que se llame la funcion edgeExist)
+    /// devuelve true si borra, false si no
+    pub fn removeNode(self: *Self, node1: []const u8) bool {
+        if (self.nodeExists(node1)) {
+            var node: Node = self.nodes_map.get(node1) orelse unreachable;
+            node.ady_map.clearAndFree();
+            return self.nodes_map.remove(node1);
+        }
+        return false;
+    }
+
+    /// Borra la arista correspondiente. false si no lo borra, true si borra o no existe el ady
+    pub fn removeEdge(self: *Self, node1: []const u8, node2: []const u8) !bool {
+        if (self.edgeExists(node1, node2)) {
+            var node_1: Node = self.nodes_map.get(node1) orelse unreachable;
+            return try node_1.removeAdy(node2);
+        }
+        return true;
     }
 };

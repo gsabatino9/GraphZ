@@ -10,17 +10,17 @@ const Node = struct {
     label: []const u8,
     const Self = @This();
 
-    pub fn agregar_nodo(self: *Self) !void{
-        try self.adj.append(0);    
+    pub fn agregarNodo(self: *Self) !void {
+        try self.adj.append(0);
     }
 
-    pub fn iniciar_nodo(self: *Self, tam: u32) !void{
-        for (0..tam) | _ |{
+    pub fn iniciarNodo(self: *Self, tam: u32) !void {
+        for (0..tam) |_| {
             try self.adj.append(0);
         }
     }
 
-    pub fn agregar_adyacencia(self: *Self, pos:usize) void{
+    pub fn agregarAdyacencia(self: *Self, pos: usize) void {
         var resultado = self.adj.items[pos];
         resultado += 1;
         self.adj.items[pos] = resultado;
@@ -29,7 +29,6 @@ const Node = struct {
     pub fn deinit(self: *Self) void {
         self.adj.deinit();
     }
-
 };
 
 pub const Graph = struct {
@@ -37,7 +36,7 @@ pub const Graph = struct {
     nodes_map: ArrayList(Node),
     tam: u32,
     const Self = @This();
-    
+
     pub fn init(allocator: Allocator) Self {
         print("Inicio el grafo\n", .{});
         return .{
@@ -48,7 +47,7 @@ pub const Graph = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        for (self.nodes_map.items) | nodo |{   
+        for (self.nodes_map.items) |nodo| {
             var n = nodo;
             n.deinit();
             //nodo.label.deinit();
@@ -56,10 +55,10 @@ pub const Graph = struct {
         self.nodes_map.deinit();
     }
 
-    pub fn contiene(self: *Self, valor: []const u8) bool{
+    pub fn auxContains(self: *Self, valor: []const u8) bool {
         if (self.tam == 0) return false;
 
-        for (self.nodes_map.items) | nodo |{
+        for (self.nodes_map.items) |nodo| {
             if (std.mem.eql(u8, nodo.label, valor)) return true;
         }
         return false;
@@ -67,75 +66,74 @@ pub const Graph = struct {
 
     /// la función devuelve true en caso de haber insertado
     /// el nodo. false en caso de encontrarse presente.
-    pub fn addNode(self: *Self, node_label: []const u8) !bool {
+    pub fn addNode(self: *Self, node: []const u8) !bool {
         // si ya existe el nodo, no hago nada
-        if (self.contiene(node_label)) {
+        if (self.auxContains(node)) {
             return false; //o true?
         }
         //creo el nodo
         var nodo = Node{
             .adj = ArrayList(u8).init(self.allocator),
-            .label = node_label,
+            .label = node,
         };
 
-        if (self.tam == 0){
-            try nodo.agregar_nodo();
+        if (self.tam == 0) {
+            try nodo.agregarNodo();
             try self.nodes_map.append(nodo);
-            self.tam +=1;
+            self.tam += 1;
             return true;
         }
 
-        try nodo.iniciar_nodo(self.tam);
+        try nodo.iniciarNodo(self.tam);
         try self.nodes_map.append(nodo);
 
-        for (self.nodes_map.items, 0..) | nodo_aux, i |{
+        for (self.nodes_map.items, 0..) |nodo_aux, i| {
             var n = nodo_aux;
-            try n.agregar_nodo();
+            try n.agregarNodo();
             self.nodes_map.items[i] = n;
         }
-        self.tam +=1;
+        self.tam += 1;
         return true;
     }
 
-    pub fn contains(self: *Self, node_label: []const u8) bool {
-        return self.contiene(node_label);
+    pub fn contains(self: *Self, node: []const u8) bool {
+        return self.auxContains(node);
     }
 
     /// devuelve true en caso de que el nodo exista, false en caso de que no
-    pub fn nodeExists(self: *Self, node_label: []const u8) bool {
-        for (self.nodes_map.items) | nodo | {
-            if (std.mem.eql(u8, nodo.label, node_label)) return true;
+    pub fn nodeExists(self: *Self, node: []const u8) bool {
+        for (self.nodes_map.items) |nodo| {
+            if (std.mem.eql(u8, nodo.label, node)) return true;
         }
         return false;
-        
     }
 
     /// devuelve GraphError.NODE_NOT_FOUND en caso de que alguno de los dos nodos
     /// no existan
     /// Esta implementación es para grafos no dirigidos
     pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) !bool {
-        // si no existen los nodos, devuelvo error 
-        if (!(self.contiene(node1)) or !(self.contiene(node2))) {
+        // si no existen los nodos, devuelvo error
+        if (!(self.auxContains(node1)) or !(self.auxContains(node2))) {
             return GraphError.NODE_NOT_FOUND;
         }
         var node1_pos: usize = undefined;
         var node2_pos: usize = undefined;
-        
-        for (self.nodes_map.items, 0..) | nodo, i| {
-            if (std.mem.eql(u8, nodo.label, node1)){
+
+        for (self.nodes_map.items, 0..) |nodo, i| {
+            if (std.mem.eql(u8, nodo.label, node1)) {
                 node1_pos = i;
                 break;
             }
         }
 
-        for (self.nodes_map.items, 0..) | nodo, i| {
-            if ((std.mem.eql(u8, nodo.label, node2))){
+        for (self.nodes_map.items, 0..) |nodo, i| {
+            if ((std.mem.eql(u8, nodo.label, node2))) {
                 node2_pos = i;
                 break;
-            }           
+            }
         }
-        self.nodes_map.items[node1_pos].agregar_adyacencia(node2_pos);
-        self.nodes_map.items[node2_pos].agregar_adyacencia(node1_pos);
+        self.nodes_map.items[node1_pos].agregarAdyacencia(node2_pos);
+        self.nodes_map.items[node2_pos].agregarAdyacencia(node1_pos);
         return true;
     }
 
@@ -143,73 +141,71 @@ pub const Graph = struct {
     /// la implementación cambia si el grafo es dirigido o no
     /// en este caso no es dirigido
     pub fn edgeExists(self: *Self, node1: []const u8, node2: []const u8) bool {
-       // si no existen los nodos, devuelvo error
-        if (!(self.contiene(node1)) or !(self.contiene(node2))) {
+        // si no existen los nodos, devuelvo error
+        if (!(self.auxContains(node1)) or !(self.auxContains(node2))) {
             return false;
         }
         var node2_pos: usize = undefined;
-        for (self.nodes_map.items, 0..) | nodo, i |{
-            if (std.mem.eql(u8, nodo.label, node2)){
+        for (self.nodes_map.items, 0..) |nodo, i| {
+            if (std.mem.eql(u8, nodo.label, node2)) {
                 node2_pos = i;
             }
         }
 
-        for (self.nodes_map.items) | nodo | {
-            if (std.mem.eql(u8, nodo.label, node1)){
+        for (self.nodes_map.items) |nodo| {
+            if (std.mem.eql(u8, nodo.label, node1)) {
                 return (nodo.adj.items[node2_pos] >= 1);
             }
         }
         return false;
     }
 
-    pub fn deleteNode(self: *Self, node1: []const u8) !void{
-        if (!self.contiene(node1)) {
+    pub fn deleteNode(self: *Self, node1: []const u8) ![]const u8 {
+        if (!self.auxContains(node1)) {
             return GraphError.NODE_NOT_FOUND;
         }
 
         var node_pos: usize = undefined;
         //var label: u8 = undefined;
 
-        for (self.nodes_map.items, 0..) | nodo, i| {
-            if (std.mem.eql(u8, nodo.label, node1)){
+        for (self.nodes_map.items, 0..) |nodo, i| {
+            if (std.mem.eql(u8, nodo.label, node1)) {
                 node_pos = i;
             }
         }
         var n = self.nodes_map.orderedRemove(node_pos);
-        //const label = n.label;
-        //label = n.label; //esta linea falla
+        const label = n.label;
         n.deinit();
-        
-        for (self.nodes_map.items, 0..) | nodo, i| {
+
+        for (self.nodes_map.items, 0..) |nodo, i| {
             var aux = nodo;
             _ = aux.adj.orderedRemove(node_pos);
 
             self.nodes_map.items[i] = aux;
         }
         self.tam = self.tam - 1;
-        //return label;
+        return label;
     }
 
     pub fn deleteEdge(self: *Self, node1: []const u8, node2: []const u8) !void {
-        // si no existen los nodos, devuelvo error 
-        if (!(self.contiene(node1)) or !(self.contiene(node2))) {
+        // si no existen los nodos, devuelvo error
+        if (!(self.auxContains(node1)) or !(self.auxContains(node2))) {
             return GraphError.NODE_NOT_FOUND;
         }
         var node1_pos: usize = undefined;
         var node2_pos: usize = undefined;
-        
-        for (self.nodes_map.items, 0..) | nodo, i |{
-            if (std.mem.eql(u8, nodo.label, node1)){
+
+        for (self.nodes_map.items, 0..) |nodo, i| {
+            if (std.mem.eql(u8, nodo.label, node1)) {
                 node1_pos = i;
                 break;
             }
         }
-        for (self.nodes_map.items, 0..) | nodo, i |{
-            if ((std.mem.eql(u8, nodo.label, node2))){
+        for (self.nodes_map.items, 0..) |nodo, i| {
+            if ((std.mem.eql(u8, nodo.label, node2))) {
                 node2_pos = i;
-                break;   
+                break;
             }
-           
         }
         self.nodes_map.items[node1_pos].adj.items[node2_pos] = 0;
         self.nodes_map.items[node2_pos].adj.items[node1_pos] = 0;
@@ -221,15 +217,14 @@ pub const Graph = struct {
 
     pub fn countEdges(self: *Self) u32 {
         var resultado: u32 = 0;
-        for (self.nodes_map.items) | nodo |{
-            for (nodo.adj.items) | adj |{
+        for (self.nodes_map.items) |nodo| {
+            for (nodo.adj.items) |adj| {
                 resultado += adj;
             }
         }
-        return resultado/2;
+        return resultado / 2;
     }
 };
-
 
 const testing = std.testing;
 test "Test agrego nodos y existen\n" {
@@ -274,11 +269,11 @@ test "Test agrego nodos y existen\n" {
     try testing.expect(graph.edgeExists("B", "A") == false);
     try testing.expect(graph.countEdges() == 3);
 
-    _ = try graph.deleteNode("A");
+    const node_label = try graph.deleteNode("A");
     try testing.expect(graph.nodeExists("A") == false);
     try testing.expect(graph.edgeExists("C", "A") == false);
     try testing.expect(graph.countEdges() == 0);
+    try testing.expect(std.mem.eql(u8, node_label, "A"));
 
     try testing.expect(graph.countNodes() == 2);
-    
 }
