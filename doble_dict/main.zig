@@ -17,17 +17,17 @@ pub fn main() !void {
 
     const A_bool = try graph.addNode(A);
     if (A_bool) {
-        print("A insertado", {});
+        print("A insertado", .{});
     }
     if (graph.nodeExists(A)) {
-        print("A guardado", {});
+        print("A guardado", .{});
     }
 
     const B_bool = try graph.addNode(B);
     if (B_bool) {
-        print("B insertado", {});
+        print("B insertado", .{});
     }
     if (graph.nodeExists(B)) {
-        print("B guardado", {});
+        print("B guardado", .{});
     }
 }

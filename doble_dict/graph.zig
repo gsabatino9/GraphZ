@@ -101,7 +101,7 @@ pub const Graph = struct {
 
     /// devuelve true en caso de que el eje exista, false en caso de que no
     pub fn edgeExists(self: *Self, node1: []const u8, node2: []const u8) bool {
-        if ((!self.nodeExists(node1))) {
+        if ((!self.nodeExists(node1) or !self.nodeExists(node2))) {
             return false;
         } else {
             return self.nodeAdyExists(node1, node2);
@@ -122,7 +122,7 @@ pub const Graph = struct {
     /// Conecta 2 nodos, devuelve GraphError.NODE_NOT_EXISTS en caso de que alguno de los dos nodos no existan
     pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) !void {
         if (!self.edgeExists(node1, node2)) {
-            var node_1: Node = self.nodes_map.get(node1) orelse unreachable;
+            var node_1 = self.nodes_map.getPtr(node1).?;
             try node_1.addAdy(node2);
         }
         // grafo dirigido -> si se quiere no dirigido simplemente agregar 2 aristas por union
