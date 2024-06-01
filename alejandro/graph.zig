@@ -55,11 +55,11 @@ pub const Graph = struct {
         self.nodes_map.deinit();
     }
 
-    pub fn auxContains(self: *Self, valor: []const u8) bool {
+    pub fn auxContains(self: *Self, node: []const u8) bool {
         if (self.tam == 0) return false;
 
         for (self.nodes_map.items) |nodo| {
-            if (std.mem.eql(u8, nodo.label, valor)) return true;
+            if (std.mem.eql(u8, nodo.label, node)) return true;
         }
         return false;
     }
@@ -68,7 +68,8 @@ pub const Graph = struct {
     /// el nodo. false en caso de encontrarse presente.
     pub fn addNode(self: *Self, node: []const u8) !bool {
         // si ya existe el nodo, no hago nada
-        if (self.auxContains(node)) {
+        if (self.nodeExists(node)) {
+            print("Ya tengo el nodo: {s} bro\n",.{node});
             return false; //o true?
         }
         //creo el nodo
@@ -113,7 +114,7 @@ pub const Graph = struct {
     /// Esta implementación es para grafos no dirigidos
     pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) !bool {
         // si no existen los nodos, devuelvo error
-        if (!(self.auxContains(node1)) or !(self.auxContains(node2))) {
+        if (!(self.nodeExists(node1)) or !(self.nodeExists(node2))) {
             return GraphError.NODE_NOT_FOUND;
         }
         var node1_pos: usize = undefined;
@@ -224,7 +225,13 @@ pub const Graph = struct {
         }
         return resultado / 2;
     }
-};
+    pub fn printG(self: *Self) void {
+        for (self.nodes_map.items) |nodo| {
+            print("{s} ",.{nodo.label});
+        }
+    print("\n",.{});
+    }
+};   
 
 const testing = std.testing;
 test "Test agrego nodos y existen\n" {
@@ -249,6 +256,12 @@ test "Test agrego nodos y existen\n" {
     try testing.expect(graph.edgeExists("A", "C") == false);
     try testing.expect(graph.edgeExists("C", "A") == false);
 
+   
+    try std.testing.expectError(error.NODE_NOT_FOUND, graph.addEdge("A", "C"));
+    try std.testing.expectError(error.NODE_NOT_FOUND, graph.deleteEdge("A", "C"));
+
+    try std.testing.expectError(error.NODE_NOT_FOUND, graph.deleteNode("Z"));
+
     _ = try graph.addNode("C");
     try testing.expect(graph.countNodes() == 3);
 
@@ -261,6 +274,7 @@ test "Test agrego nodos y existen\n" {
     try testing.expect(graph.countEdges() == 3);
     try testing.expect(graph.edgeExists("A", "C") == true);
 
+    //print("grafo {s} \n",.{graph.nodes_map.items});
     _ = try graph.addEdge("A", "A");
     try testing.expect(graph.countEdges() == 4);
 
