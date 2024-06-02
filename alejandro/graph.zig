@@ -49,6 +49,7 @@ pub const Graph = struct {
     pub fn deinit(self: *Self) void {
         for (self.nodes_map.items) |nodo| {
             var n = nodo;
+            //print("nodo borrado: {s}\n",.{nodo.label});
             n.deinit();
             //nodo.label.deinit();
         }
@@ -69,7 +70,7 @@ pub const Graph = struct {
     pub fn addNode(self: *Self, node: []const u8) !bool {
         // si ya existe el nodo, no hago nada
         if (self.nodeExists(node)) {
-            print("Ya tengo el nodo: {s} bro\n",.{node});
+            //print("Ya tengo el nodo: {s} bro\n",.{node});
             return false; //o true?
         }
         //creo el nodo
@@ -104,7 +105,11 @@ pub const Graph = struct {
     /// devuelve true en caso de que el nodo exista, false en caso de que no
     pub fn nodeExists(self: *Self, node: []const u8) bool {
         for (self.nodes_map.items) |nodo| {
-            if (std.mem.eql(u8, nodo.label, node)) return true;
+            //print("nodo pasado: {s}, nodo encontrado: {s}\n",.{node, nodo.label});
+                
+            if (std.mem.eql(u8, nodo.label, node)) {
+                return true;
+                }
         }
         return false;
     }
