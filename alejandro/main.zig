@@ -53,4 +53,36 @@ pub fn main() !void {
 
     }
     graph.printG();
+    print("tamano = {}\n",.{graph.countNodes()});
+    print("tamano = {}\n",.{graph.countEdges()});
+}
+
+
+
+const testing = std.testing;
+test "Test creo un grafo con un archivo vacio\n" {
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator);
+    defer graph.deinit();
+
+    var file = try std.fs.cwd().openFile("vacio.txt", .{});
+    defer file.close();
+
+    try testing.expect(graph.countNodes() == 0);
+    try testing.expect(graph.countEdges() == 0);
+ 
+}
+
+
+test "Test creo un grafo con un archivo normal\n" {
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator);
+    defer graph.deinit();
+
+    var file = try std.fs.cwd().openFile("grafo.txt", .{});
+    defer file.close();
+
+    //try testing.expect(graph.countNodes() == 7);
+    //try testing.expect(graph.countEdges() == 6);
+ 
 }
