@@ -11,10 +11,22 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    var graph = Graph.init(allocator);
+    var graph = try crearGrafo(allocator, "grafo.txt");
     defer graph.deinit();
 
-    var file = try std.fs.cwd().openFile("grafo.txt", .{});
+    
+    graph.printG();
+    print("tamano = {}\n",.{graph.countNodes()});
+    print("tamano = {}\n",.{graph.countEdges()});
+}
+
+//corregir lo del nombre de archivo
+pub fn crearGrafo(allocator: Allocator, nombre_archivo: *const [9:0]u8) !Graph{ 
+
+    var graph = Graph.init(allocator);
+    const archivo = nombre_archivo;
+
+    var file = try std.fs.cwd().openFile(archivo, .{});
     defer file.close();
 
     var buf_reader = std.io.bufferedReader(file.reader());
@@ -49,24 +61,15 @@ pub fn main() !void {
         _ = try graph.addEdge(nodo1_aux, nodo2_aux);
 
         //print("nodo 1 {s}, nodo 2 {s},\n",.{nodo1, nodo2});
-     
-
     }
-    graph.printG();
-    print("tamano = {}\n",.{graph.countNodes()});
-    print("tamano = {}\n",.{graph.countEdges()});
+    return graph;
 }
-
-
 
 const testing = std.testing;
 test "Test creo un grafo con un archivo vacio\n" {
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator);
+    var graph = try crearGrafo(allocator, "vacio.txt");
     defer graph.deinit();
-
-    var file = try std.fs.cwd().openFile("vacio.txt", .{});
-    defer file.close();
 
     try testing.expect(graph.countNodes() == 0);
     try testing.expect(graph.countEdges() == 0);
@@ -76,13 +79,10 @@ test "Test creo un grafo con un archivo vacio\n" {
 
 test "Test creo un grafo con un archivo normal\n" {
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator);
+    var graph = try crearGrafo(allocator, "grafo.txt");
     defer graph.deinit();
 
-    var file = try std.fs.cwd().openFile("grafo.txt", .{});
-    defer file.close();
-
-    //try testing.expect(graph.countNodes() == 7);
-    //try testing.expect(graph.countEdges() == 6);
+    try testing.expect(graph.countNodes() == 7);
+    try testing.expect(graph.countEdges() == 6);
  
 }
