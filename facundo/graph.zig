@@ -8,7 +8,7 @@ const stdin = std.io.getStdIn().reader();
 const GraphError = error{ NODE_NOT_EXISTS, EDGE_NOT_EXISTS };
 const ReadError = error{BadRead};
 
-const Node = struct {
+pub const Node = struct {
     allocator: Allocator,
     // ady_map: mapea los adyacentes del nodo (por ahora: clave = valor = []const u8)
     ady_map: AdyMap,

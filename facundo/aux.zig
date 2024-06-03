@@ -1,9 +1,10 @@
 const std = @import("std");
+const Node = @import("graph.zig").Node;
+const Graph = @import("graph.zig").Graph;
 const print = std.debug.print;
 const Allocator = std.mem.Allocator;
 const NodesMap = std.StringHashMap(Node);
 const AdyMap = std.StringHashMap([]const u8);
-const Node = @import("graph.zig").Node;
 const stdin = std.io.getStdIn().reader();
 // Errores
 const ReadError = error{BadRead};
@@ -44,11 +45,12 @@ pub fn read_and_own(allocator: Allocator, is_title: u8) ReadError![]const u8 {
     }
 }
 
-pub fn graph_print(graph: NodesMap) !void {
-    var it = graph.iterator();
+// imprime el grafico
+pub fn graph_print(graph: Graph) !void {
+    var it = graph.nodes_map.iterator();
     while (it.next()) |entry| {
-        print("Nodo: '{s}' -> ", .{entry.key_ptr.*});
-        var it_node = entry.value_ptr.*.iterator();
+        print("Nodo: '{s}' Adyacentes: ", .{entry.key_ptr.*});
+        var it_node = entry.value_ptr.*.ady_map.iterator();
         while (it_node.next()) |entry_node| {
             print("{s}, ", .{entry_node.key_ptr.*});
         }
