@@ -1,8 +1,13 @@
 const std = @import("std");
+const Queue = @import("tdas/Queue.zig").Queue;
+const Aux = @import("aux.zig");
 const print = std.debug.print;
 const Allocator = std.mem.Allocator;
 const NodesMap = std.StringHashMap(Node);
 const AdyMap = std.StringHashMap([]const u8);
+const DadMap = std.StringHashMap(?[]const u8);
+const OrderMap = std.StringHashMap(u8);
+const VisitedMap = std.StringHashMap([]const u8);
 const stdin = std.io.getStdIn().reader();
 // Errores
 const GraphError = error{ NODE_NOT_EXISTS, EDGE_NOT_EXISTS };
@@ -10,7 +15,6 @@ const ReadError = error{BadRead};
 
 pub const Node = struct {
     allocator: Allocator,
-    // ady_map: mapea los adyacentes del nodo (por ahora: clave = valor = []const u8)
     ady_map: AdyMap,
 
     const Self = @This();
@@ -57,15 +61,11 @@ pub const Node = struct {
 };
 
 pub const Graph = struct {
-    // allocator: aloja memoria para las estructuras de datos (solo eso)
     allocator: Allocator,
-    // nodes_map: mapea nombre del nodo ([]const u8) a su nodo (tipo Node)
     nodes_map: NodesMap,
 
-    // parseo el tipo del grafo asi si le cambio el nombre no se ve impactado en ningun lado más
     const Self = @This();
 
-    // guardo allocator y creo estructuras iniciales pasandole el allocator, solo eso
     pub fn init(allocator: Allocator) Self {
         return .{
             .allocator = allocator,
@@ -146,5 +146,55 @@ pub const Graph = struct {
             return try node_1.removeAdy(node2);
         }
         return true;
+    }
+
+    // Devuelve el diccionario de adyacentes del nodo
+    pub fn getAdy(self: *Self, string: []const u8) AdyMap {
+        const node: Node = self.nodes_map.get(string) orelse unreachable;
+        return node.ady_map;
+    }
+
+    // recorrido BFS - Complejidad -> O(V+E)
+    pub fn bfs(self: *Self, A: []const u8, B: []const u8) !void {
+        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        const allocator = gpa.allocator();
+        var dads: DadMap = DadMap.init(allocator);
+        var order: OrderMap = OrderMap.init(allocator);
+        var visited: VisitedMap = VisitedMap.init(allocator);
+        var queue = Queue([]const u8).init(allocator);
+        defer dads.deinit();
+        defer order.deinit();
+        defer visited.deinit();
+
+        try dads.put(A, null);
+        try order.put(A, 0);
+        try visited.put(A, A);
+        try queue.enqueue(A);
+        while (true) {
+            const node: []const u8 = queue.dequeue() orelse break;
+            // se llega a destino
+            if (std.mem.eql(u8, node, B)) {
+                break;
+            }
+            const ady_map: AdyMap = self.getAdy(node);
+            var it_ady = ady_map.iterator();
+            while (it_ady.next()) |entry_node| {
+                const ady = entry_node.key_ptr.*;
+                if (!visited.contains(ady)) {
+                    try dads.put(ady, node);
+                    const order_node: u8 = order.get(node) orelse unreachable;
+                    try order.put(ady, order_node + 1);
+                    try visited.put(ady, ady);
+                    try queue.enqueue(ady);
+                }
+            }
+        }
+        if (dads.get(B) == null) {
+            print("No hay camino posible \n", .{});
+        }
+        print("Camino ", .{});
+        try Aux.printdads(dads, B);
+        print(" -> {s}", .{B});
+        print("\n", .{});
     }
 };

@@ -5,6 +5,7 @@ const print = std.debug.print;
 const Allocator = std.mem.Allocator;
 const NodesMap = std.StringHashMap(Node);
 const AdyMap = std.StringHashMap([]const u8);
+const DadMap = std.StringHashMap(?[]const u8);
 const stdin = std.io.getStdIn().reader();
 // Errores
 const ReadError = error{BadRead};
@@ -47,4 +48,13 @@ pub fn graph_print(graph: Graph) !void {
         print("\n", .{});
     }
     print("\n", .{});
+}
+
+pub fn printdads(dads: DadMap, B: []const u8) !void {
+    const dadB: ?[]const u8 = dads.get(B).?;
+    if (dadB == null) {
+        return;
+    }
+    try printdads(dads, dadB.?);
+    print("-> {s}", .{dadB.?});
 }

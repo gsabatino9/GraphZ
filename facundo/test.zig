@@ -65,3 +65,25 @@ test "Agrego nodos y aristas, e imprimo" {
     print("\n", .{});
     try Aux.graph_print(graph);
 }
+
+test "Camino minimo por bfs" {
+    const allocator = testing.allocator;
+    var graph: Graph = Graph.init(allocator);
+    defer graph.deinit();
+
+    _ = try graph.addNode("A");
+    _ = try graph.addNode("B");
+    _ = try graph.addNode("C");
+    _ = try graph.addNode("D");
+    _ = try graph.addNode("E");
+    _ = try graph.addEdge("A", "B");
+    _ = try graph.addEdge("B", "C");
+    _ = try graph.addEdge("C", "D");
+    _ = try graph.addEdge("A", "C");
+    _ = try graph.addEdge("A", "D");
+
+    print("\n", .{});
+    try graph.bfs("A", "B");
+    try graph.bfs("A", "C");
+    try graph.bfs("A", "D");
+}

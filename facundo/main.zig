@@ -36,5 +36,7 @@ pub fn main() !void {
             }
         }
     }
+
+    // imprime nodos y sus adyacentes
     try Aux.graph_print(graph);
 }
