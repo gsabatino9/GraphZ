@@ -3,6 +3,7 @@ const print = std.debug.print;
 const Allocator = std.mem.Allocator;
 const Graph = @import("graph.zig").Graph;
 const Aux = @import("aux.zig");
+const ReadError = error{BadRead};
 
 // MAIN - implementación usando doble diccionario
 
@@ -16,24 +17,24 @@ pub fn main() !void {
     // solicita por stdin nodos y sus adyacentes y los inserta
     while (true) {
         // solicita nodo por stdin
-        const node = Aux.stdInput(allocator, 1) catch {
+        const node = Aux.read_and_own(allocator, 1) catch {
             break;
         };
         if (!graph.nodeExists(node)) {
-            _ = graph.addNode(node);
+            _ = graph.addNode(node) catch false;
         }
         while (true) {
-            // solicita nodo por stdin
-            const aux = Aux.stdInput(allocator, 2) catch {
+            // solicita ady por stdin
+            const aux = Aux.read_and_own(allocator, 2) catch {
                 break;
             };
             if (!graph.nodeExists(aux)) {
-                graph.addNode(aux);
+                _ = graph.addNode(aux) catch false;
             }
             if (!graph.edgeExists(node, aux)) {
-                graph.addEdge(node, aux);
+                _ = graph.addEdge(node, aux) catch false;
             }
         }
     }
-    Aux.graph_print(graph);
+    try Aux.graph_print(graph);
 }

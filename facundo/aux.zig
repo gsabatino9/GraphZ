@@ -12,16 +12,6 @@ const ReadError = error{BadRead};
 // FUNCIONES AUXILIARES
 
 // toma valor por stdin
-pub fn stdInput(allocator: Allocator, is_title: u8) ReadError![]const u8 {
-    while (true) {
-        // solicita key por stdin
-        const key = read_and_own(allocator, is_title) catch {
-            break;
-        };
-        return key;
-    }
-}
-
 pub fn read_and_own(allocator: Allocator, is_title: u8) ReadError![]const u8 {
     var buf: [30]u8 = undefined;
     switch (is_title) {
