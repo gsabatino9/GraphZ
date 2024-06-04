@@ -3,7 +3,6 @@ const print = std.debug.print;
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const Graph = @import("graph.zig").Graph;
-
 const ReadError = error{BadRead};
 
 pub fn main() !void {
@@ -50,20 +49,32 @@ pub fn crearGrafo(allocator: Allocator, nombre_archivo: *const [9:0]u8) !Graph{
         const nodo2 = nodo2_next.?;
 
         const nodo1_aux = allocator.dupe(u8, nodo1) catch {
-        return ReadError.BadRead;
-        };
+                return ReadError.BadRead;
+            };
+        
+
+        
         const nodo2_aux = allocator.dupe(u8, nodo2) catch {
             return ReadError.BadRead;
         };
+
+        const bool_nodo1 = graph.contains(nodo1_aux);
+        const bool_nodo2 = graph.contains(nodo2_aux);
+        
 
         _ = try graph.addNode(nodo1_aux);
         _ = try graph.addNode(nodo2_aux);
         _ = try graph.addEdge(nodo1_aux, nodo2_aux);
 
+        if (bool_nodo1) allocator.free(nodo1_aux);
+        if (bool_nodo2) allocator.free(nodo2_aux);
+        
         //print("nodo 1 {s}, nodo 2 {s},\n",.{nodo1, nodo2});
     }
     return graph;
 }
+
+
 
 const testing = std.testing;
 test "Test creo un grafo con un archivo vacio\n" {
@@ -84,5 +95,12 @@ test "Test creo un grafo con un archivo normal\n" {
 
     try testing.expect(graph.countNodes() == 7);
     try testing.expect(graph.countEdges() == 6);
- 
+
+    const tam = graph.countNodes();
+
+    for (0..tam) |_|{
+        const label = try graph.borrarNodo();
+        print("el label es : {s}\n",.{label});
+        allocator.free(label);
+    }
 }

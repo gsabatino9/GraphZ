@@ -6,3 +6,5 @@ Realizada la implementación de la matriz con un ArrayList de nodos. Los nodos s
 ## Semana 27/05
 Refactorizar el código para que cumpla los estandares de zig.
 Agregar una construcción de grafo a traves de un archivo.
+
+## Semana 03/06

@@ -236,6 +236,25 @@ pub const Graph = struct {
         }
     print("\n",.{});
     }
+
+    pub fn borrarNodo(self: *Self) ![]const u8 {
+        if (self.countNodes() == 0) {
+            return GraphError.NODE_NOT_FOUND;
+        }
+        
+        var n = self.nodes_map.orderedRemove(0);
+        const label = n.label;
+        n.deinit();
+
+        for (self.nodes_map.items, 0..) |nodo, i| {
+            var aux = nodo;
+            _ = aux.adj.orderedRemove(0);
+
+            self.nodes_map.items[i] = aux;
+        }
+        self.tam = self.tam - 1;
+        return label;
+    }
 };   
 
 const testing = std.testing;
@@ -288,11 +307,26 @@ test "Test agrego nodos y existen\n" {
     try testing.expect(graph.edgeExists("B", "A") == false);
     try testing.expect(graph.countEdges() == 3);
 
-    const node_label = try graph.deleteNode("A");
+    const A = try graph.deleteNode("A");
     try testing.expect(graph.nodeExists("A") == false);
     try testing.expect(graph.edgeExists("C", "A") == false);
     try testing.expect(graph.countEdges() == 0);
-    try testing.expect(std.mem.eql(u8, node_label, "A"));
+    try testing.expect(std.mem.eql(u8, A, "A"));
 
     try testing.expect(graph.countNodes() == 2);
+
+    const B = try graph.deleteNode("B");
+    try testing.expect(std.mem.eql(u8, B, "B"));
+
+    const C = try graph.deleteNode("C");
+    try testing.expect(std.mem.eql(u8, C, "C"));
+
+    try testing.expect(graph.countNodes() == 0);
+
+    _ = try graph.addNode("C");
+    const valor = try graph.borrarNodo();
+
+    try testing.expect(std.mem.eql(u8, valor, "C"));
+
+    try testing.expect(graph.countNodes() == 0);
 }
