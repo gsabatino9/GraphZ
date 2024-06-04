@@ -16,6 +16,7 @@ const ReadError = error{BadRead};
 pub const Node = struct {
     allocator: Allocator,
     ady_map: AdyMap,
+    adyNumber: u8,
 
     const Self = @This();
 
@@ -23,6 +24,7 @@ pub const Node = struct {
         return .{
             .allocator = allocator,
             .ady_map = AdyMap.init(allocator),
+            .adyNumber = 0,
         };
     }
 
@@ -48,21 +50,29 @@ pub const Node = struct {
     pub fn addAdy(self: *Self, node_label: []const u8) !void {
         if (!self.adyExist(node_label)) {
             try self.ady_map.put(node_label, node_label);
+            self.adyNumber = self.adyNumber + 1;
         }
     }
 
     // devuelve false en caso de no borrar el ady, true en caso de que si (si ady no existe envia true)
     pub fn removeAdy(self: *Self, node_label: []const u8) bool {
         if (!self.adyExist(node_label)) {
+            self.adyNumber = self.adyNumber - 1;
             return self.ady_map.remove(node_label);
         }
         return true;
+    }
+
+    // devuelve la cantidad de adyacentes del nodo
+    pub fn getAdyNumber(self: *Self) u8 {
+        return self.adyNumber;
     }
 };
 
 pub const Graph = struct {
     allocator: Allocator,
     nodes_map: NodesMap,
+    nodeNumber: u8,
 
     const Self = @This();
 
@@ -70,6 +80,7 @@ pub const Graph = struct {
         return .{
             .allocator = allocator,
             .nodes_map = NodesMap.init(allocator),
+            .nodeNumber = 0,
         };
     }
 
@@ -117,6 +128,7 @@ pub const Graph = struct {
         }
         const node: Node = Node.init(self.allocator);
         try self.nodes_map.put(node_label, node);
+        self.nodeNumber = self.nodeNumber + 1;
         return true;
     }
 
@@ -134,6 +146,7 @@ pub const Graph = struct {
         if (self.nodeExists(node1)) {
             var node: Node = self.nodes_map.get(node1) orelse unreachable;
             node.ady_map.clearAndFree();
+            self.nodeNumber = self.nodeNumber - 1;
             return self.nodes_map.remove(node1);
         }
         return false;
@@ -154,6 +167,16 @@ pub const Graph = struct {
         return node.ady_map;
     }
 
+    // Devuelve la cantidad de nodos del grafo
+    pub fn getNodeNumber(self: *Self) u8 {
+        return self.nodeNumber;
+    }
+
+    pub fn getAdyNumber(self: *Self, node: []const u8) u8 {
+        var node_ = self.nodes_map.getPtr(node) orelse unreachable;
+        return node_.getAdyNumber();
+    }
+
     // recorrido BFS - Complejidad -> O(V+E)
     pub fn bfs(self: *Self, A: []const u8, B: []const u8) !void {
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -165,7 +188,6 @@ pub const Graph = struct {
         defer dads.deinit();
         defer order.deinit();
         defer visited.deinit();
-
         try dads.put(A, null);
         try order.put(A, 0);
         try visited.put(A, A);
@@ -189,12 +211,53 @@ pub const Graph = struct {
                 }
             }
         }
+        // si no hay camino
         if (dads.get(B) == null) {
             print("No hay camino posible \n", .{});
         }
-        print("Camino ", .{});
-        try Aux.printdads(dads, B);
-        print(" -> {s}", .{B});
-        print("\n", .{});
+        // si hay camino
+        try Aux.printDads(dads, B);
+    }
+
+    // recorrido DFS - Complejidad -> O(V+E)
+    pub fn dfs(self: *Self, A: []const u8, B: []const u8) !void {
+        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        const allocator = gpa.allocator();
+        var dads: DadMap = DadMap.init(allocator);
+        var order: OrderMap = OrderMap.init(allocator);
+        var visited: VisitedMap = VisitedMap.init(allocator);
+        var queue = Queue([]const u8).init(allocator);
+        defer dads.deinit();
+        defer order.deinit();
+        defer visited.deinit();
+        try dads.put(A, null);
+        try order.put(A, 0);
+        try visited.put(A, A);
+        try queue.enqueue(A);
+        try self.dfs_(A, B, &visited, &dads, &order);
+        // si no hay camino
+        if (dads.get(B) == null) {
+            print("No hay camino posible \n", .{});
+        }
+        // si hay camino
+        try Aux.printDads(dads, B);
+    }
+    // llamada recursiva dfs
+    fn dfs_(self: *Self, A: []const u8, B: []const u8, visited: *VisitedMap, dads: *DadMap, order: *OrderMap) !void {
+        if (std.mem.eql(u8, A, B)) {
+            return;
+        }
+        const ady_map: AdyMap = self.getAdy(A);
+        var it_ady = ady_map.iterator();
+        while (it_ady.next()) |entry_node| {
+            const ady = entry_node.key_ptr.*;
+            if (!visited.contains(ady)) {
+                try dads.put(ady, A);
+                const order_node: u8 = order.get(A) orelse unreachable;
+                try order.put(ady, order_node + 1);
+                try visited.put(ady, ady);
+                try self.dfs_(ady, B, visited, dads, order);
+            }
+        }
     }
 };

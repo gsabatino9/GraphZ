@@ -50,11 +50,18 @@ pub fn graph_print(graph: Graph) !void {
     print("\n", .{});
 }
 
-pub fn printdads(dads: DadMap, B: []const u8) !void {
+// imprime recursivamente todos los nodos del camino menos la ultima
+pub fn printDads(dads: DadMap, B: []const u8) !void {
+    print("Camino ", .{});
+    try printDads_(dads, B);
+    print(" -> {s}", .{B});
+    print("\n", .{});
+}
+fn printDads_(dads: DadMap, B: []const u8) !void {
     const dadB: ?[]const u8 = dads.get(B).?;
     if (dadB == null) {
         return;
     }
-    try printdads(dads, dadB.?);
+    try printDads_(dads, dadB.?);
     print("-> {s}", .{dadB.?});
 }
