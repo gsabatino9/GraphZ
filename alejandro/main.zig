@@ -3,6 +3,9 @@ const print = std.debug.print;
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const Graph = @import("graph.zig").Graph;
+//const Graph_F = @import("../facundo/graph.zig").Graph;
+//const Graph_G = @import("/../gonzalo/graph.zig").Graph;
+
 const ReadError = error{BadRead};
 
 pub fn main() !void {
@@ -17,6 +20,8 @@ pub fn main() !void {
     graph.printG();
     print("tamano = {}\n",.{graph.countNodes()});
     print("tamano = {}\n",.{graph.countEdges()});
+
+
 }
 
 //corregir lo del nombre de archivo
@@ -104,10 +109,18 @@ test "Test creo un grafo con un archivo normal\n" {
     try testing.expect(graph.edgeExists("G","B") == true);
     try testing.expect(graph.edgeExists("C","D") == true);
     
-    const tam = graph.countNodes();
+    //const tam = graph.countNodes();
 
-    for (0..tam) |_|{
-        const label = try graph.borrarNodo();
+    const array = [_]*const[1:0]u8{"A","B","C","D","G","H","Z"};
+
+    //const array = [_]u8{'A','B','C','D','G','H','Z'};
+
+    for (array) |valor|{
+        const label = try graph.deleteNode(valor);
         allocator.free(label);
     }
+    //for (0..tam) |_|{
+    //    const label = try graph.borrarNodo();
+    //    allocator.free(label);
+   // }
 }

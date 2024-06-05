@@ -53,15 +53,6 @@ pub const Graph = struct {
         self.nodes_map.deinit();
     }
 
-    pub fn auxContains(self: *Self, node: []const u8) bool {
-        if (self.tam == 0) return false;
-
-        for (self.nodes_map.items) |nodo| {
-            if (std.mem.eql(u8, nodo.label, node)) return true;
-        }
-        return false;
-    }
-
     /// la función devuelve true en caso de haber insertado
     /// el nodo. false en caso de encontrarse presente.
     pub fn addNode(self: *Self, node: []const u8) !bool {
@@ -96,17 +87,20 @@ pub const Graph = struct {
     }
 
     pub fn contains(self: *Self, node: []const u8) bool {
-        return self.auxContains(node);
+        if (self.tam == 0) return false;
+
+        for (self.nodes_map.items) |nodo| {
+            if (std.mem.eql(u8, nodo.label, node)) return true;
+        }
+        return false;
     }
 
     /// devuelve true en caso de que el nodo exista, false en caso de que no
     pub fn nodeExists(self: *Self, node: []const u8) bool {
+        if (self.tam == 0) return false;
+
         for (self.nodes_map.items) |nodo| {
-            //print("nodo pasado: {s}, nodo encontrado: {s}\n",.{node, nodo.label});
-                
-            if (std.mem.eql(u8, nodo.label, node)) {
-                return true;
-                }
+            if (std.mem.eql(u8, nodo.label, node)) return true;
         }
         return false;
     }
@@ -145,7 +139,7 @@ pub const Graph = struct {
     /// en este caso no es dirigido
     pub fn edgeExists(self: *Self, node1: []const u8, node2: []const u8) bool {
         // si no existen los nodos, devuelvo error
-        if (!(self.auxContains(node1)) or !(self.auxContains(node2))) {
+        if (!(self.contains(node1)) or !(self.contains(node2))) {
             return false;
         }
         var node2_pos: usize = undefined;
@@ -164,7 +158,7 @@ pub const Graph = struct {
     }
 
     pub fn deleteNode(self: *Self, node1: []const u8) ![]const u8 {
-        if (!self.auxContains(node1)) {
+        if (!self.contains(node1)) {
             return GraphError.NODE_NOT_FOUND;
         }
 
@@ -192,7 +186,7 @@ pub const Graph = struct {
 
     pub fn deleteEdge(self: *Self, node1: []const u8, node2: []const u8) !void {
         // si no existen los nodos, devuelvo error
-        if (!(self.auxContains(node1)) or !(self.auxContains(node2))) {
+        if (!(self.contains(node1)) or !(self.contains(node2))) {
             return GraphError.NODE_NOT_FOUND;
         }
         var node1_pos: usize = undefined;
@@ -231,7 +225,7 @@ pub const Graph = struct {
         for (self.nodes_map.items) |nodo| {
             print("{s} ",.{nodo.label});
         }
-    print("\n",.{});
+        print("\n",.{});
     }
 
     pub fn borrarNodo(self: *Self) ![]const u8 {
