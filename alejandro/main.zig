@@ -40,34 +40,34 @@ pub fn crearGrafo(allocator: Allocator, nombre_archivo: *const [9:0]u8) !Graph{
         if (nodo1_next == null) {
             return ReadError.BadRead;
         }
-        const nodo1 = nodo1_next.?;
+        const nodo1_aux = nodo1_next.?;
 
         const nodo2_next = splits.next();
         if (nodo2_next == null) {
             return ReadError.BadRead;
         }
-        const nodo2 = nodo2_next.?;
+        const nodo2_aux = nodo2_next.?;
 
-        const nodo1_aux = allocator.dupe(u8, nodo1) catch {
+        const nodo1 = allocator.dupe(u8, nodo1_aux) catch {
                 return ReadError.BadRead;
             };
         
 
         
-        const nodo2_aux = allocator.dupe(u8, nodo2) catch {
+        const nodo2 = allocator.dupe(u8, nodo2_aux) catch {
             return ReadError.BadRead;
         };
 
-        const bool_nodo1 = graph.contains(nodo1_aux);
-        const bool_nodo2 = graph.contains(nodo2_aux);
+        const bool_nodo1 = graph.contains(nodo1);
+        const bool_nodo2 = graph.contains(nodo2);
         
 
-        _ = try graph.addNode(nodo1_aux);
-        _ = try graph.addNode(nodo2_aux);
-        _ = try graph.addEdge(nodo1_aux, nodo2_aux);
+        _ = try graph.addNode(nodo1);
+        _ = try graph.addNode(nodo2);
+        _ = try graph.addEdge(nodo1, nodo2);
 
-        if (bool_nodo1) allocator.free(nodo1_aux);
-        if (bool_nodo2) allocator.free(nodo2_aux);
+        if (bool_nodo1) allocator.free(nodo1);
+        if (bool_nodo2) allocator.free(nodo2);
         
         //print("nodo 1 {s}, nodo 2 {s},\n",.{nodo1, nodo2});
     }
@@ -96,11 +96,18 @@ test "Test creo un grafo con un archivo normal\n" {
     try testing.expect(graph.countNodes() == 7);
     try testing.expect(graph.countEdges() == 6);
 
+    try testing.expect(graph.edgeExists("A","B") == true);
+    try testing.expect(graph.edgeExists("H","Z") == true);
+    try testing.expect(graph.edgeExists("C","B") == true);
+    try testing.expect(graph.edgeExists("A","C") == true);
+    try testing.expect(graph.edgeExists("A","B") == true);
+    try testing.expect(graph.edgeExists("G","B") == true);
+    try testing.expect(graph.edgeExists("C","D") == true);
+    
     const tam = graph.countNodes();
 
     for (0..tam) |_|{
         const label = try graph.borrarNodo();
-        print("el label es : {s}\n",.{label});
         allocator.free(label);
     }
 }

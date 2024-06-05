@@ -38,7 +38,6 @@ pub const Graph = struct {
     const Self = @This();
 
     pub fn init(allocator: Allocator) Self {
-        print("Inicio el grafo\n", .{});
         return .{
             .allocator = allocator,
             .nodes_map = ArrayList(Node).init(allocator),
@@ -49,9 +48,7 @@ pub const Graph = struct {
     pub fn deinit(self: *Self) void {
         for (self.nodes_map.items) |nodo| {
             var n = nodo;
-            //print("nodo borrado: {s}\n",.{nodo.label});
             n.deinit();
-            //nodo.label.deinit();
         }
         self.nodes_map.deinit();
     }
@@ -258,6 +255,19 @@ pub const Graph = struct {
 };   
 
 const testing = std.testing;
+
+
+test "Test agrego un nodo y existe\n" {
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator);
+    defer graph.deinit();
+
+    _ = try graph.addNode("A");
+    try testing.expect(graph.nodeExists("A") == true);
+    try testing.expect(graph.countNodes() == 1);
+
+}
+
 test "Test agrego nodos y existen\n" {
     const allocator = testing.allocator;
     var graph = Graph.init(allocator);
@@ -265,40 +275,113 @@ test "Test agrego nodos y existen\n" {
 
     _ = try graph.addNode("A");
     _ = try graph.addNode("B");
-    try testing.expect(graph.countNodes() == 2);
 
-    _ = try graph.addEdge("A", "B");
-    try testing.expect(graph.countEdges() == 1);
-    _ = try graph.addNode("A");
-    try testing.expect(graph.countNodes() == 2);
-
-    try testing.expect(graph.nodeExists("A") == true);
     try testing.expect(graph.nodeExists("B") == true);
-    try testing.expect(graph.nodeExists("C") == false);
-    try testing.expect(graph.edgeExists("A", "B") == true);
-    try testing.expect(graph.edgeExists("B", "A") == true);
-    try testing.expect(graph.edgeExists("A", "C") == false);
-    try testing.expect(graph.edgeExists("C", "A") == false);
+    try testing.expect(graph.countNodes() == 2);
 
-   
+}
+
+
+test "Test agrego nodos y aristas\n" {
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator);
+    defer graph.deinit();
+
+    _ = try graph.addNode("A");
+    _ = try graph.addNode("B");
+    _ = try graph.addEdge("A", "B");
+
+    try testing.expect(graph.countEdges() == 1);
+    try testing.expect(graph.edgeExists("A", "B") == true);
+    
+}
+
+test "Test agrego un nodo repetido y no se agrega 2 veces"{
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator);
+    defer graph.deinit();
+
+    _ = try graph.addNode("A");
+    _ = try graph.addNode("A");
+
+    try testing.expect(graph.countNodes() == 1);
+}
+
+test "Test agrego una arista a un solo nodo"{ //podria borrarse esta
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator);
+    defer graph.deinit();
+
+    _ = try graph.addNode("A");
+    _ = try graph.addEdge("A", "A");
+
+    try testing.expect(graph.countEdges() == 1);
+    try testing.expect(graph.edgeExists("A", "A") == true);
+    
+}
+
+test "Test verifico que un nodo no agregado no existe"{
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator);
+    defer graph.deinit();
+
+    try testing.expect(graph.nodeExists("C") == false);
+}
+
+test "Test verifico que una arista no agregada no existe"{
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator);
+    defer graph.deinit();
+
+    _ = try graph.addNode("A");
+    _ = try graph.addNode("B");
+
+    try testing.expect(graph.edgeExists("A","B") == false);
+}
+
+test "Test agregar una arista a un nodo no existente devuelve error"{
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator);
+    defer graph.deinit();
+
     try std.testing.expectError(error.NODE_NOT_FOUND, graph.addEdge("A", "C"));
+    }
+
+test "Test borrar una arista que no existe devuelve error"{
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator);
+    defer graph.deinit();
+    _ = try graph.addNode("A");
+    
     try std.testing.expectError(error.NODE_NOT_FOUND, graph.deleteEdge("A", "C"));
+}
+
+test "Test borrar un nodo no existente devuelve error"{
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator);
+    defer graph.deinit();
 
     try std.testing.expectError(error.NODE_NOT_FOUND, graph.deleteNode("Z"));
 
+}
+
+test "Test de varias operaciones\n" {
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator);
+    defer graph.deinit();
+
+    _ = try graph.addNode("A");
+    _ = try graph.addNode("B");
+    
+    _ = try graph.addEdge("A", "B");
+    
+    _ = try graph.addNode("A");
+    
     _ = try graph.addNode("C");
-    try testing.expect(graph.countNodes() == 3);
-
     _ = try graph.addEdge("A", "C");
-    try testing.expect(graph.countEdges() == 2);
-    try testing.expect(graph.edgeExists("A", "C") == true);
-    try testing.expect(graph.edgeExists("C", "A") == true);
-
+    
     _ = try graph.addEdge("A", "C");
-    try testing.expect(graph.countEdges() == 3);
-    try testing.expect(graph.edgeExists("A", "C") == true);
-
-    //print("grafo {s} \n",.{graph.nodes_map.items});
+    
     _ = try graph.addEdge("A", "A");
     try testing.expect(graph.countEdges() == 4);
 
