@@ -3,7 +3,7 @@ const print = std.debug.print;
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const Graph = @import("graph.zig").Graph;
-//const Graph_F = @import("../facundo/graph.zig").Graph;
+//const Graph_F = @import("graph_f.zig").Graph;
 //const Graph_G = @import("/../gonzalo/graph.zig").Graph;
 
 const ReadError = error{BadRead};
@@ -13,7 +13,7 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    var graph = try crearGrafo(allocator, "grafo.txt");
+    var graph = try crearGrafo(allocator, "grafo.csv");
     defer graph.deinit();
 
     
@@ -24,15 +24,19 @@ pub fn main() !void {
 
 }
 
-//corregir lo del nombre de archivo
-pub fn crearGrafo(allocator: Allocator, nombre_archivo: *const [9:0]u8) !Graph{ 
+
+pub fn crearGrafo(allocator: Allocator, nombre_archivo: []const u8) !Graph{ 
 
     var graph = Graph.init(allocator);
     const archivo = nombre_archivo;
+    //print("arhivo = {s}\n",.{archivo});
 
     var file = try std.fs.cwd().openFile(archivo, .{});
     defer file.close();
 
+    //const message = "junk_file2.csv";
+    //var file = try std.fs.cwd().openFile(message, .{});
+    
     var buf_reader = std.io.bufferedReader(file.reader());
     var in_stream = buf_reader.reader();
     //The std.io.bufferedReader isn’t mandatory but recommended for better performance.
@@ -40,7 +44,7 @@ pub fn crearGrafo(allocator: Allocator, nombre_archivo: *const [9:0]u8) !Graph{
     var buf: [1024]u8 = undefined;
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
         
-        var splits = std.mem.split(u8, line, "-");
+        var splits = std.mem.split(u8, line, ",");
         const nodo1_next = splits.next();
         if (nodo1_next == null) {
             return ReadError.BadRead;
@@ -56,8 +60,6 @@ pub fn crearGrafo(allocator: Allocator, nombre_archivo: *const [9:0]u8) !Graph{
         const nodo1 = allocator.dupe(u8, nodo1_aux) catch {
                 return ReadError.BadRead;
             };
-        
-
         
         const nodo2 = allocator.dupe(u8, nodo2_aux) catch {
             return ReadError.BadRead;
@@ -79,8 +81,6 @@ pub fn crearGrafo(allocator: Allocator, nombre_archivo: *const [9:0]u8) !Graph{
     return graph;
 }
 
-
-
 const testing = std.testing;
 test "Test creo un grafo con un archivo vacio\n" {
     const allocator = testing.allocator;
@@ -88,12 +88,10 @@ test "Test creo un grafo con un archivo vacio\n" {
     defer graph.deinit();
 
     try testing.expect(graph.countNodes() == 0);
-    try testing.expect(graph.countEdges() == 0);
- 
+    try testing.expect(graph.countEdges() == 0); 
 }
 
-
-test "Test creo un grafo con un archivo normal\n" {
+test "Test creo un grafo con un archivo txt normal\n" {
     const allocator = testing.allocator;
     var graph = try crearGrafo(allocator, "grafo.txt");
     defer graph.deinit();
@@ -123,4 +121,26 @@ test "Test creo un grafo con un archivo normal\n" {
     //    const label = try graph.borrarNodo();
     //    allocator.free(label);
    // }
+}
+
+
+test "Test creo un grafo con un archivo csv normal\n" {
+    const allocator = testing.allocator;
+    var graph = try crearGrafo(allocator, "grafo.csv");
+    defer graph.deinit();
+
+    try testing.expect(graph.countNodes() == 5);
+    try testing.expect(graph.countEdges() == 4);
+
+    try testing.expect(graph.edgeExists("A","B") == true);
+    try testing.expect(graph.edgeExists("C","B") == true);
+    try testing.expect(graph.edgeExists("A","C") == true);
+    try testing.expect(graph.edgeExists("G","E") == true);
+    
+    const array = [_]*const[1:0]u8{"A","B","C","E","G"};
+
+    for (array) |valor|{
+        const label = try graph.deleteNode(valor);
+        allocator.free(label);
+    }
 }

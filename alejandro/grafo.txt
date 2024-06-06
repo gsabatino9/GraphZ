@@ -1,6 +1,6 @@
-A-B
-H-Z
-B-C
-C-A
-G-B
-D-C
+A,B
+H,Z
+B,C
+C,A
+G,B
+D,C
