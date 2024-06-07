@@ -1,12 +1,6 @@
 const std = @import("std");
 const print = std.debug.print;
-const ArrayList = std.ArrayList;
-const AutoHashMap = std.hash_map.AutoHashMap;
-const StringContext = std.hash_map.StringContext;
-const math = std.math;
 const Allocator = std.mem.Allocator;
-const AdjacentsMap = @import("adjacents/adjacents.zig").AdjacentsMap;
-const NodesMap = @import("nodes/nodes_map.zig").NodesMap;
 const GraphError = @import("errors.zig").GraphError;
 const GraphUnmanaged = @import("graph_unmanaged.zig").GraphUnmanaged;
 
@@ -19,7 +13,7 @@ pub const Graph = struct {
     graph_config: GraphConfig,
     graph_unmanaged: GraphUnmanaged,
     const Self = @This();
-    const Size = AdjacentsMap.Size;
+    const Size = GraphUnmanaged.Size;
 
     pub fn init(allocator: Allocator, graph_config: GraphConfig) Self {
         return .{ .allocator = allocator, .graph_config = graph_config, .graph_unmanaged = GraphUnmanaged.init(allocator) };

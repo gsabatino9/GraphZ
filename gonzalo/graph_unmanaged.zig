@@ -13,7 +13,7 @@ pub const GraphUnmanaged = struct {
     nodes_map: NodesMap,
     adjacents_map: AdjacentsMap,
     const Self = @This();
-    const Size = AdjacentsMap.Size;
+    pub const Size = AdjacentsMap.Size;
 
     pub fn init(allocator: Allocator) Self {
         return .{ .nodes_map = NodesMap.init(allocator), .adjacents_map = AdjacentsMap.init(allocator) };
