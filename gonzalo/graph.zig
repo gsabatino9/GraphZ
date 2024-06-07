@@ -9,7 +9,9 @@ const AdjacentsMap = @import("adjacents/adjacents.zig").AdjacentsMap;
 const NodesMap = @import("nodes/nodes_map.zig").NodesMap;
 const GraphError = @import("errors.zig").GraphError;
 
-pub const GraphType = enum { Directed, Undirected };
+pub const GraphConfig = struct {
+    is_directed: bool = true,
+};
 
 pub const Graph = struct {
     nodes_map: NodesMap,
@@ -19,18 +21,8 @@ pub const Graph = struct {
     const Self = @This();
     const Size = AdjacentsMap.Size;
 
-    pub fn init(allocator: Allocator, graph_type: GraphType) Self {
-        const is_directed = graph_type == GraphType.Directed;
-        // graph type default is undirected
-        return .{ .nodes_map = NodesMap.init(allocator), .adjacents_map = AdjacentsMap.init(allocator), .allocator = allocator, .is_directed = is_directed };
-    }
-
-    pub fn init_undirected(allocator: Allocator) Self {
-        return Self.init(allocator, GraphType.Undirected);
-    }
-
-    pub fn init_directed(allocator: Allocator) Self {
-        return Self.init(allocator, GraphType.Directed);
+    pub fn init(allocator: Allocator, graph_config: GraphConfig) Self {
+        return .{ .nodes_map = NodesMap.init(allocator), .adjacents_map = AdjacentsMap.init(allocator), .allocator = allocator, .is_directed = graph_config.is_directed };
     }
 
     pub fn deinit(self: *Self) void {
@@ -86,9 +78,33 @@ pub const Graph = struct {
 };
 
 const testing = std.testing;
-test "Test graph" {
+test "Test graph. Default: directed" {
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator, GraphType.Undirected);
+    var graph = Graph.init(allocator, .{});
+    defer graph.deinit();
+
+    _ = try graph.addNode("a");
+    _ = try graph.addNode("b");
+
+    try testing.expect(graph.contains("a") == true);
+    try testing.expect(graph.contains("b") == true);
+    try testing.expect(graph.contains("c") == false);
+
+    try graph.addEdge("a", "b");
+    try testing.expect(graph.edgeExists("a", "b") == true);
+    try testing.expect(graph.edgeExists("b", "a") == false);
+    try testing.expect(graph.edgeExists("a", "c") == false);
+
+    // const err = graph.addEdge("a", "c");
+    // try testing.expectError(GraphError.NODE_NOT_EXISTS, err);
+
+    try testing.expect(graph.countNodes() == 2);
+    try testing.expect(graph.countEdges() == 1);
+}
+
+test "Test graph. Graph type: undirected" {
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator, .{ .is_directed = false });
     defer graph.deinit();
 
     _ = try graph.addNode("a");
