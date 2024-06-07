@@ -1,6 +1,6 @@
 const std = @import("std");
-const Node = @import("graph.zig").Node;
-const Graph = @import("graph.zig").Graph;
+const Node = @import("directed_graph.zig").Node;
+const Graph = @import("directed_graph.zig").Graph;
 const print = std.debug.print;
 const Allocator = std.mem.Allocator;
 const NodesMap = std.StringHashMap(Node);
@@ -38,6 +38,7 @@ pub fn read_and_own(allocator: Allocator, is_title: u8) ReadError![]const u8 {
 
 // imprime el grafico
 pub fn graph_print(graph: Graph) !void {
+    print("\n", .{});
     var it = graph.nodes_map.iterator();
     while (it.next()) |entry| {
         print("Nodo: '{s}' Adyacentes: ", .{entry.key_ptr.*});
@@ -65,3 +66,28 @@ fn printDads_(dads: DadMap, B: []const u8) !void {
     try printDads_(dads, dadB.?);
     print("-> {s}", .{dadB.?});
 }
+
+//////////////////////////////////////////////////////////////////////////////////////
+// BORRADOR
+//
+//    while (true) {
+//        // solicita nodo por stdin
+//        const node = Aux.read_and_own(allocator, 1) catch {
+//            break;
+//        };
+//        if (!graph.nodeExists(node)) {
+//            _ = graph.addNode(node) catch false;
+//        }
+//        while (true) {
+//            // solicita ady por stdin
+//            const aux = Aux.read_and_own(allocator, 2) catch {
+//                break;
+//            };
+//            if (!graph.nodeExists(aux)) {
+//                _ = graph.addNode(aux) catch false;
+//            }
+//            if (!graph.edgeExists(node, aux)) {
+//                _ = graph.addEdge(node, aux) catch false;
+//            }
+//        }
+//    }
