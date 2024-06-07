@@ -73,9 +73,6 @@ test "Test graph. Default: directed" {
     try testing.expect(graph.edgeExists("b", "a") == false);
     try testing.expect(graph.edgeExists("a", "c") == false);
 
-    // const err = graph.addEdge("a", "c");
-    // try testing.expectError(GraphError.NODE_NOT_EXISTS, err);
-
     try testing.expect(graph.countNodes() == 2);
     try testing.expect(graph.countEdges() == 1);
 }
@@ -96,9 +93,6 @@ test "Test graph. Graph type: undirected" {
     try testing.expect(graph.edgeExists("a", "b") == true);
     try testing.expect(graph.edgeExists("b", "a") == true);
     try testing.expect(graph.edgeExists("a", "c") == false);
-
-    // const err = graph.addEdge("a", "c");
-    // try testing.expectError(GraphError.NODE_NOT_EXISTS, err);
 
     try testing.expect(graph.countNodes() == 2);
     try testing.expect(graph.countEdges() == 1);
