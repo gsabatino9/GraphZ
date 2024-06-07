@@ -38,7 +38,7 @@ pub const GraphUnmanaged = struct {
         return self.nodes_map.containsLabel(node);
     }
 
-    pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) !void {
+    pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8, is_directed: bool) !void {
         if (!(self.nodes_map.containsLabel(node1) and self.nodes_map.containsLabel(node2))) {
             return GraphError.NODE_NOT_EXISTS;
         }
@@ -46,6 +46,9 @@ pub const GraphUnmanaged = struct {
         const node_hash1 = self.nodes_map.mapNodeLabel(node1);
         const node_hash2 = self.nodes_map.mapNodeLabel(node2);
         try self.adjacents_map.addEdge(node_hash1, node_hash2);
+        if (!is_directed) {
+            try self.adjacents_map.addEdge(node_hash2, node_hash1);
+        }
     }
 
     pub fn edgeExists(self: *Self, node1: []const u8, node2: []const u8) bool {
@@ -59,13 +62,17 @@ pub const GraphUnmanaged = struct {
         return self.nodes_map.countNodes();
     }
 
-    pub fn countEdges(self: *Self) Size {
-        return self.adjacents_map.countEdges();
+    pub fn countEdges(self: *Self, is_directed: bool) Size {
+        if (is_directed) {
+            return self.adjacents_map.countEdges();
+        } else {
+            return self.adjacents_map.countEdges() / 2;
+        }
     }
 };
 
 const testing = std.testing;
-test "Test graph" {
+test "Test graph. Graph directed" {
     const allocator = testing.allocator;
     var graph = GraphUnmanaged.init(allocator);
     defer graph.deinit();
@@ -77,7 +84,7 @@ test "Test graph" {
     try testing.expect(graph.contains("b") == true);
     try testing.expect(graph.contains("c") == false);
 
-    try graph.addEdge("a", "b");
+    try graph.addEdge("a", "b", true);
     try testing.expect(graph.edgeExists("a", "b") == true);
     try testing.expect(graph.edgeExists("b", "a") == false);
     try testing.expect(graph.edgeExists("a", "c") == false);
@@ -86,5 +93,5 @@ test "Test graph" {
     // try testing.expectError(GraphError.NODE_NOT_EXISTS, err);
 
     try testing.expect(graph.countNodes() == 2);
-    try testing.expect(graph.countEdges() == 1);
+    try testing.expect(graph.countEdges(true) == 1);
 }

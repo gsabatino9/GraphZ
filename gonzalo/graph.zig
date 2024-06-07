@@ -8,72 +8,50 @@ const Allocator = std.mem.Allocator;
 const AdjacentsMap = @import("adjacents/adjacents.zig").AdjacentsMap;
 const NodesMap = @import("nodes/nodes_map.zig").NodesMap;
 const GraphError = @import("errors.zig").GraphError;
+const GraphUnmanaged = @import("graph_unmanaged.zig").GraphUnmanaged;
 
 pub const GraphConfig = struct {
     is_directed: bool = true,
 };
 
 pub const Graph = struct {
-    nodes_map: NodesMap,
-    adjacents_map: AdjacentsMap,
     allocator: Allocator,
-    is_directed: bool,
+    graph_config: GraphConfig,
+    graph_unmanaged: GraphUnmanaged,
     const Self = @This();
     const Size = AdjacentsMap.Size;
 
     pub fn init(allocator: Allocator, graph_config: GraphConfig) Self {
-        return .{ .nodes_map = NodesMap.init(allocator), .adjacents_map = AdjacentsMap.init(allocator), .allocator = allocator, .is_directed = graph_config.is_directed };
+        return .{ .allocator = allocator, .graph_config = graph_config, .graph_unmanaged = GraphUnmanaged.init(allocator) };
     }
 
     pub fn deinit(self: *Self) void {
-        self.adjacents_map.deinit();
-        self.nodes_map.deinit();
+        self.graph_unmanaged.deinit();
     }
 
     /// retorna true si lo agrega, false si ya existe
     pub fn addNode(self: *Self, node: []const u8) !bool {
-        const node_hash = try self.nodes_map.addNodeLabel(node);
-        if (node_hash) |h| {
-            _ = try self.adjacents_map.addNode(h);
-            return true;
-        }
-        return false;
+        return try self.graph_unmanaged.addNode(node);
     }
 
     pub fn contains(self: *Self, node: []const u8) bool {
-        return self.nodes_map.containsLabel(node);
+        return self.graph_unmanaged.contains(node);
     }
 
     pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) !void {
-        if (!(self.nodes_map.containsLabel(node1) and self.nodes_map.containsLabel(node2))) {
-            return GraphError.NODE_NOT_EXISTS;
-        }
-
-        const node_hash1 = self.nodes_map.mapNodeLabel(node1);
-        const node_hash2 = self.nodes_map.mapNodeLabel(node2);
-        try self.adjacents_map.addEdge(node_hash1, node_hash2);
-        if (!self.is_directed) {
-            try self.adjacents_map.addEdge(node_hash2, node_hash1);
-        }
+        try self.graph_unmanaged.addEdge(node1, node2, self.graph_config.is_directed);
     }
 
     pub fn edgeExists(self: *Self, node1: []const u8, node2: []const u8) bool {
-        const node_hash1 = self.nodes_map.mapNodeLabel(node1);
-        const node_hash2 = self.nodes_map.mapNodeLabel(node2);
-
-        return self.adjacents_map.edgeExists(node_hash1, node_hash2);
+        return self.graph_unmanaged.edgeExists(node1, node2);
     }
 
     pub fn countNodes(self: *Self) Size {
-        return self.nodes_map.countNodes();
+        return self.graph_unmanaged.countNodes();
     }
 
     pub fn countEdges(self: *Self) Size {
-        if (self.is_directed) {
-            return self.adjacents_map.countEdges();
-        } else {
-            return self.adjacents_map.countEdges() / 2;
-        }
+        return self.graph_unmanaged.countEdges(self.graph_config.is_directed);
     }
 };
 
