@@ -42,11 +42,27 @@ pub fn loop_add_relations(allocator: Allocator) !void {
     }
 }
 
+const random_gen = std.rand.DefaultPrng;
+pub fn loop_graph(allocator: Allocator) !void {
+    var rnd = random_gen.init(0);
+    var graph = Graph.init_undirected(allocator);
+    defer graph.deinit();
+
+    for (0..10000) |_| {
+        const rand_num = rnd.random().int(i32);
+        const max_len = 20;
+        var buf: [max_len]u8 = undefined;
+        const label = try std.fmt.bufPrint(&buf, "{}", .{rand_num});
+
+        _ = try graph.addNode(label);
+    }
+}
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    try loop_add_relations(allocator);
+    try loop_graph(allocator);
 }
 
 const testing = std.testing;
