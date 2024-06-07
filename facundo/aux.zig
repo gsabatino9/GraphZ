@@ -1,12 +1,15 @@
 const std = @import("std");
-const Node = @import("directed_graph.zig").Node;
-const Graph = @import("directed_graph.zig").Graph;
+const stdin = std.io.getStdIn().reader();
 const print = std.debug.print;
 const Allocator = std.mem.Allocator;
-const NodesMap = std.StringHashMap(Node);
 const AdyMap = std.StringHashMap([]const u8);
 const DadMap = std.StringHashMap(?[]const u8);
-const stdin = std.io.getStdIn().reader();
+const DirectedNodesMap = std.StringHashMap(DirectedNode);
+const DirectedGraph = @import("directed_graph.zig").Graph;
+const DirectedNode = @import("directed_graph.zig").Node;
+const UndirectedNodesMap = std.StringHashMap(UndirectedNode);
+const UndirectedGraph = @import("undirected_graph.zig").Graph;
+const UndirectedNode = @import("undirected_graph.zig").Node;
 // Errores
 const ReadError = error{BadRead};
 
@@ -36,8 +39,23 @@ pub fn read_and_own(allocator: Allocator, is_title: u8) ReadError![]const u8 {
     }
 }
 
-// imprime el grafico
-pub fn graph_print(graph: Graph) !void {
+// imprime los nodos de un grafo direccionado con sus respectivos adyacentes
+pub fn DirectedGraphPrint(graph: DirectedGraph) !void {
+    print("\n", .{});
+    var it = graph.nodes_map.iterator();
+    while (it.next()) |entry| {
+        print("Nodo: '{s}' Adyacentes: ", .{entry.key_ptr.*});
+        var it_node = entry.value_ptr.*.ady_map.iterator();
+        while (it_node.next()) |entry_node| {
+            print("{s}, ", .{entry_node.key_ptr.*});
+        }
+        print("\n", .{});
+    }
+    print("\n", .{});
+}
+
+// imprime los nodos de un grafo no direccionado con sus respectivos adyacentes
+pub fn UndirectedGraphPrint(graph: UndirectedGraph) !void {
     print("\n", .{});
     var it = graph.nodes_map.iterator();
     while (it.next()) |entry| {

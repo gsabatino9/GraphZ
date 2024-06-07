@@ -1,22 +1,35 @@
 const std = @import("std");
 const print = std.debug.print;
 const Allocator = std.mem.Allocator;
-const Graph = @import("directed_graph.zig").Graph;
+const DirectedGraph = @import("directed_graph.zig").Graph;
+const UndirectedGraph = @import("undirected_graph.zig").Graph;
 const Aux = @import("aux.zig");
-const ReadError = error{BadRead};
 
 // MAIN - implementación usando doble diccionario
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    // grafo
-    var graph: Graph = Graph.init(allocator);
-    defer graph.deinit();
+    // grafo direccionado
+    var directedGraph: DirectedGraph = DirectedGraph.init(allocator);
+    defer directedGraph.deinit();
+    // grafo no direccionado
+    var undirectedGraph: UndirectedGraph = UndirectedGraph.init(allocator);
+    defer undirectedGraph.deinit();
 
-    // solicita por stdin nodos y sus adyacentes y los inserta
-    try graph.insertStdin(allocator);
+    // Grafo direccionado    -> solicita por stdin nodos y sus adyacentes y los inserta
+    print("Ingresar los nodos y adyacentes del grafo direccionado: \n");
+    try directedGraph.insertStdin(allocator);
+    // Grafo no direccionado -> solicita por stdin nodos y sus adyacentes y los inserta
+    print("Ingresar los nodos y adyacentes del grafo no direccionado: \n");
+    try undirectedGraph.insertStdin(allocator);
 
-    // imprime nodos y sus adyacentes
-    try Aux.graph_print(graph);
+    // Grafo direccionado    -> imprime nodos y sus adyacentes
+    print("Grafo direccionado: \n");
+    try Aux.DirectedGraphPrint(directedGraph);
+    // Grafo no direccionado -> imprime nodos y sus adyacentes
+    print("Grafo no direccionado: \n");
+    try Aux.UndirectedGraphPrint(undirectedGraph);
+
+    // crear grafo a partir de un .csv
 }

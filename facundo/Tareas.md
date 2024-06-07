@@ -7,7 +7,7 @@
  Se agregan funciones necesarias a la implementacion del grafo y se modifica el mismo para que sea direccionado, se arreglan errores de la implementacion: error de alocacion de memoria y un error en la estructura del nodo que ocacionaba que el programa pierda memoria.
 
 ## Semana 03/06
- Se agregan funciones y algoritmos a la implementacion del grafo: recorrido BFS, recorrido DFS y funciones necesarias para el grafo. Se agregan los test de los algoritmos mencionados. Se crea una implementacion aparte para un grafo no direccionado aparte del grafo direccionado.
+ Se agregan funciones y algoritmos a la implementacion del grafo: recorrido BFS, recorrido DFS y funciones necesarias para el grafo. Se agregan los test de los algoritmos mencionados. Se crea una implementacion aparte para un grafo no direccionado aparte del grafo direccionado implementado.
 
 ## Tareas Pendientes
  - agregar funciones necesarias a la implementacion del grafo (segun se necesite)
