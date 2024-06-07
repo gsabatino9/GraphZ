@@ -5,7 +5,7 @@ const get_relation = @import("utils.zig").get_relation;
 const Graph = @import("graph.zig").Graph;
 
 pub fn loop_add_relations(allocator: Allocator) !void {
-    var graph = Graph.init_directed(allocator);
+    var graph = Graph.init(.{ .structures_allocator = allocator, .is_directed = false });
     defer graph.deinit();
     var list_inserted = std.ArrayList([]const u8).init(allocator);
     defer list_inserted.deinit();
@@ -45,7 +45,7 @@ pub fn loop_add_relations(allocator: Allocator) !void {
 const random_gen = std.rand.DefaultPrng;
 pub fn loop_graph(allocator: Allocator) !void {
     var rnd = random_gen.init(0);
-    var graph = Graph.init_undirected(allocator);
+    var graph = Graph.init(.{ .structures_allocator = allocator, .is_directed = false });
     defer graph.deinit();
 
     for (0..10000) |_| {
