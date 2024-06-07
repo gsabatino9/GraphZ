@@ -4,19 +4,16 @@ const Allocator = std.mem.Allocator;
 const GraphError = @import("errors.zig").GraphError;
 const GraphUnmanaged = @import("graph_unmanaged.zig").GraphUnmanaged;
 
-pub const GraphConfig = struct {
-    is_directed: bool = true,
-};
+pub const GraphConfig = struct { is_directed: bool = true, structures_allocator: Allocator };
 
 pub const Graph = struct {
-    allocator: Allocator,
     graph_config: GraphConfig,
     graph_unmanaged: GraphUnmanaged,
     const Self = @This();
     const Size = GraphUnmanaged.Size;
 
-    pub fn init(allocator: Allocator, graph_config: GraphConfig) Self {
-        return .{ .allocator = allocator, .graph_config = graph_config, .graph_unmanaged = GraphUnmanaged.init(allocator) };
+    pub fn init(graph_config: GraphConfig) Self {
+        return .{ .graph_config = graph_config, .graph_unmanaged = GraphUnmanaged.init(graph_config.structures_allocator) };
     }
 
     pub fn deinit(self: *Self) void {
@@ -52,7 +49,7 @@ pub const Graph = struct {
 const testing = std.testing;
 test "Test graph. Default: directed" {
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator, .{});
+    var graph = Graph.init(.{ .structures_allocator = allocator });
     defer graph.deinit();
 
     _ = try graph.addNode("a");
@@ -73,7 +70,7 @@ test "Test graph. Default: directed" {
 
 test "Test graph. Graph type: undirected" {
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator, .{ .is_directed = false });
+    var graph = Graph.init(.{ .is_directed = false, .structures_allocator = allocator });
     defer graph.deinit();
 
     _ = try graph.addNode("a");
