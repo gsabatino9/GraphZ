@@ -34,14 +34,18 @@ const Node = struct {
 pub const Graph = struct {
     allocator: Allocator,
     nodes_map: ArrayList(Node),
+    is_directed: bool,
     tam: u32,
+    
     const Self = @This();
+    
 
-    pub fn init(allocator: Allocator) Self {
+    pub fn init(allocator: Allocator, is_directed: bool) Self {
         return .{
             .allocator = allocator,
             .nodes_map = ArrayList(Node).init(allocator),
             .tam = 0,
+            .is_directed = is_directed,
         };
     }
 
@@ -130,7 +134,7 @@ pub const Graph = struct {
             }
         }
         self.nodes_map.items[node1_pos].agregarAdyacencia(node2_pos);
-        self.nodes_map.items[node2_pos].agregarAdyacencia(node1_pos);
+        if (!self.is_directed) self.nodes_map.items[node2_pos].agregarAdyacencia(node1_pos);
         return true;
     }
 
@@ -205,7 +209,7 @@ pub const Graph = struct {
             }
         }
         self.nodes_map.items[node1_pos].adj.items[node2_pos] = 0;
-        self.nodes_map.items[node2_pos].adj.items[node1_pos] = 0;
+        if (!self.is_directed) self.nodes_map.items[node2_pos].adj.items[node1_pos] = 0;
     }
 
     pub fn countNodes(self: *Self) u32 {
@@ -250,10 +254,9 @@ pub const Graph = struct {
 
 const testing = std.testing;
 
-
 test "Test agrego un nodo y existe\n" {
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator);
+    var graph = Graph.init(allocator, false);
     defer graph.deinit();
 
     _ = try graph.addNode("A");
@@ -264,7 +267,7 @@ test "Test agrego un nodo y existe\n" {
 
 test "Test agrego nodos y existen\n" {
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator);
+    var graph = Graph.init(allocator, false);
     defer graph.deinit();
 
     _ = try graph.addNode("A");
@@ -278,7 +281,7 @@ test "Test agrego nodos y existen\n" {
 
 test "Test agrego nodos y aristas\n" {
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator);
+    var graph = Graph.init(allocator, false);
     defer graph.deinit();
 
     _ = try graph.addNode("A");
@@ -292,7 +295,7 @@ test "Test agrego nodos y aristas\n" {
 
 test "Test agrego un nodo repetido y no se agrega 2 veces"{
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator);
+    var graph = Graph.init(allocator, false);
     defer graph.deinit();
 
     _ = try graph.addNode("A");
@@ -303,7 +306,7 @@ test "Test agrego un nodo repetido y no se agrega 2 veces"{
 
 test "Test agrego una arista a un solo nodo"{ //podria borrarse esta
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator);
+    var graph = Graph.init(allocator, false);
     defer graph.deinit();
 
     _ = try graph.addNode("A");
@@ -316,7 +319,7 @@ test "Test agrego una arista a un solo nodo"{ //podria borrarse esta
 
 test "Test verifico que un nodo no agregado no existe"{
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator);
+    var graph = Graph.init(allocator, false);
     defer graph.deinit();
 
     try testing.expect(graph.nodeExists("C") == false);
@@ -324,7 +327,7 @@ test "Test verifico que un nodo no agregado no existe"{
 
 test "Test verifico que una arista no agregada no existe"{
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator);
+    var graph = Graph.init(allocator, false);
     defer graph.deinit();
 
     _ = try graph.addNode("A");
@@ -335,7 +338,7 @@ test "Test verifico que una arista no agregada no existe"{
 
 test "Test agregar una arista a un nodo no existente devuelve error"{
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator);
+    var graph = Graph.init(allocator, false);
     defer graph.deinit();
 
     try std.testing.expectError(error.NODE_NOT_FOUND, graph.addEdge("A", "C"));
@@ -343,7 +346,7 @@ test "Test agregar una arista a un nodo no existente devuelve error"{
 
 test "Test borrar una arista que no existe devuelve error"{
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator);
+    var graph = Graph.init(allocator, false);
     defer graph.deinit();
     _ = try graph.addNode("A");
     
@@ -352,7 +355,7 @@ test "Test borrar una arista que no existe devuelve error"{
 
 test "Test borrar un nodo no existente devuelve error"{
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator);
+    var graph = Graph.init(allocator, false);
     defer graph.deinit();
 
     try std.testing.expectError(error.NODE_NOT_FOUND, graph.deleteNode("Z"));
@@ -361,7 +364,7 @@ test "Test borrar un nodo no existente devuelve error"{
 
 test "Test de varias operaciones\n" {
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator);
+    var graph = Graph.init(allocator, false);
     defer graph.deinit();
 
     _ = try graph.addNode("A");

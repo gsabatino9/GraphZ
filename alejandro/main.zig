@@ -3,30 +3,56 @@ const print = std.debug.print;
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const Graph = @import("graph.zig").Graph;
-//const Graph_F = @import("graph_f.zig").Graph;
-//const Graph_G = @import("/../gonzalo/graph.zig").Graph;
+const Tuple = std.meta.Tuple;
+const SomeTuple = Tuple(&.{ArrayList([]const u8), Graph});
 
 const ReadError = error{BadRead};
 
-pub fn main() !void {
+const random_gen = std.rand.DefaultPrng;
+pub fn loop_graph(allocator: Allocator) !void {
+    var rnd = random_gen.init(0);
+    var graph = Graph.init(allocator, false);
+    defer graph.deinit();
 
+    for (0..10000) |_| {
+        const rand_num = rnd.random().int(i32);
+        const max_len = 20;
+        var buf: [max_len]u8 = undefined;
+        const label = try std.fmt.bufPrint(&buf, "{}", .{rand_num});
+
+        _ = try graph.addNode(label);
+    }
+}
+
+pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    var graph = try crearGrafo(allocator, "grafo.csv");
+    const tupla = try crearGrafo(allocator, "grafo.csv");
+    var graph = tupla[1];
+    var valores = tupla[0];
+        
     defer graph.deinit();
-    
+    defer valores.deinit();
+
     graph.printG();
     print("tamano = {}\n",.{graph.countNodes()});
     print("tamano = {}\n",.{graph.countEdges()});
+
+    for (valores.items) |item| {
+        allocator.free(item);
+    }
+    try loop_graph(allocator);
 }
 
 
-pub fn crearGrafo(allocator: Allocator, nombre_archivo: []const u8) !Graph{ 
+pub fn crearGrafo(allocator: Allocator, nombre_archivo: []const u8) !SomeTuple{ 
 
-    var graph = Graph.init(allocator);
-    const archivo = nombre_archivo;
+    var valores = ArrayList([]const u8).init(allocator);
     
+    var graph = Graph.init(allocator, false);
+    const archivo = nombre_archivo;
+
     var file = try std.fs.cwd().openFile(archivo, .{});
     defer file.close();
 
@@ -65,26 +91,54 @@ pub fn crearGrafo(allocator: Allocator, nombre_archivo: []const u8) !Graph{
         _ = try graph.addNode(nodo2);
         _ = try graph.addEdge(nodo1, nodo2);
 
-        if (bool_nodo1) allocator.free(nodo1);
-        if (bool_nodo2) allocator.free(nodo2);
+        if (bool_nodo1) {
+            allocator.free(nodo1);
+        }
+        else{
+            _ = try valores.append(nodo1);
+        }
+        
+        if (bool_nodo2) {
+            allocator.free(nodo2);
+        }
+        else{
+            _ = try valores.append(nodo2);
+        }
     }
-    return graph;
+    return .{
+        @as(ArrayList([]const u8), valores),
+        @as(Graph, graph),
+    };
 }
+
 
 const testing = std.testing;
 test "Test creo un grafo con un archivo vacio\n" {
     const allocator = testing.allocator;
-    var graph = try crearGrafo(allocator, "vacio.txt");
+    const tupla = try crearGrafo(allocator, "vacio.txt");
+    var graph = tupla[1];
+    var valores = tupla[0];
+        
     defer graph.deinit();
+    defer valores.deinit();
 
     try testing.expect(graph.countNodes() == 0);
-    try testing.expect(graph.countEdges() == 0); 
+    try testing.expect(graph.countEdges() == 0);
+
+    for (valores.items) |item| {
+        allocator.free(item);
+    }
 }
 
 test "Test creo un grafo con un archivo txt normal\n" {
     const allocator = testing.allocator;
-    var graph = try crearGrafo(allocator, "grafo.txt");
+    const tupla = try crearGrafo(allocator, "grafo.txt");
+    
+    var graph = tupla[1];
+    var valores = tupla[0];
+        
     defer graph.deinit();
+    defer valores.deinit();
 
     try testing.expect(graph.countNodes() == 7);
     try testing.expect(graph.countEdges() == 6);
@@ -97,19 +151,22 @@ test "Test creo un grafo con un archivo txt normal\n" {
     try testing.expect(graph.edgeExists("G","B") == true);
     try testing.expect(graph.edgeExists("C","D") == true);
     
-    const array = [_]*const[1:0]u8{"A","B","C","D","G","H","Z"};
-
-    for (array) |valor|{
-        const label = try graph.deleteNode(valor);
-        allocator.free(label);
+    for (valores.items) |item| {
+        allocator.free(item);
     }
 }
 
 
 test "Test creo un grafo con un archivo csv normal\n" {
     const allocator = testing.allocator;
-    var graph = try crearGrafo(allocator, "grafo.csv");
+    const tupla = try crearGrafo(allocator, "grafo.csv");
+    
+    var graph = tupla[1];
+    var valores = tupla[0];
+        
     defer graph.deinit();
+    defer valores.deinit();
+
 
     try testing.expect(graph.countNodes() == 5);
     try testing.expect(graph.countEdges() == 4);
@@ -119,10 +176,7 @@ test "Test creo un grafo con un archivo csv normal\n" {
     try testing.expect(graph.edgeExists("A","C") == true);
     try testing.expect(graph.edgeExists("G","E") == true);
     
-    const array = [_]*const[1:0]u8{"A","B","C","E","G"};
-
-    for (array) |valor|{
-        const label = try graph.deleteNode(valor);
-        allocator.free(label);
+    for (valores.items) |item| {
+        allocator.free(item);
     }
 }
