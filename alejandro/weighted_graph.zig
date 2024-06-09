@@ -7,27 +7,35 @@ const GraphError = error{ NODE_NOT_EXISTS, EDGE_NOT_EXISTS, NODE_NOT_FOUND };
 
 const Node = struct {
     adj: ArrayList(u32),
+    weigths: ArrayList(i32),
     label: []const u8,
     const Self = @This();
 
     pub fn agregarNodo(self: *Self) !void {
         try self.adj.append(0);
+        try self.weigths.append(0);
     }
 
     pub fn iniciarNodo(self: *Self, tam: u32) !void {
         for (0..tam) |_| {
             try self.adj.append(0);
+            try self.weigths.append(0);
         }
     }
 
-    pub fn agregarAdyacencia(self: *Self, pos: usize) void {
+    pub fn agregarAdyacencia(self: *Self, pos: usize, weigth: i32) void {
         var resultado = self.adj.items[pos];
         resultado += 1;
+
+        const peso = weigth;
         self.adj.items[pos] = resultado;
+        self.weigths.items[pos] = peso;
+        
     }
 
     pub fn deinit(self: *Self) void {
         self.adj.deinit();
+        self.weigths.deinit();
     }
 };
 
@@ -68,6 +76,7 @@ pub const Graph = struct {
         //creo el nodo
         var nodo = Node{
             .adj = ArrayList(u32).init(self.allocator),
+            .weigths = ArrayList(i32).init(self.allocator),
             .label = node,
         };
 
@@ -111,7 +120,7 @@ pub const Graph = struct {
 
     /// devuelve GraphError.NODE_NOT_FOUND en caso de que alguno de los dos nodos
     /// no existan
-    pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8) !bool {
+    pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8, peso: i32) !bool {
         // si no existen los nodos, devuelvo error
         if (!(self.nodeExists(node1)) or !(self.nodeExists(node2))) {
             return GraphError.NODE_NOT_FOUND;
@@ -132,8 +141,8 @@ pub const Graph = struct {
                 break;
             }
         }
-        self.nodes_map.items[node1_pos].agregarAdyacencia(node2_pos);
-        if (!self.is_directed) self.nodes_map.items[node2_pos].agregarAdyacencia(node1_pos);
+        self.nodes_map.items[node1_pos].agregarAdyacencia(node2_pos, peso);
+        if (!self.is_directed) self.nodes_map.items[node2_pos].agregarAdyacencia(node1_pos, peso);
         return true;
     }
 
@@ -177,6 +186,7 @@ pub const Graph = struct {
         for (self.nodes_map.items, 0..) |n, i| {
             var aux = n;
             _ = aux.adj.orderedRemove(node_pos);
+            _ = aux.weigths.orderedRemove(node_pos);
 
             self.nodes_map.items[i] = aux;
         }
@@ -205,9 +215,11 @@ pub const Graph = struct {
             }
         }
         self.nodes_map.items[node1_pos].adj.items[node2_pos] = 0;
+        self.nodes_map.items[node1_pos].weigths.items[node2_pos] = 0;
         
         if (!self.is_directed) {
             self.nodes_map.items[node2_pos].adj.items[node1_pos] = 0;
+            self.nodes_map.items[node2_pos].weigths.items[node1_pos] = 0;
         }
     }
 
@@ -226,6 +238,25 @@ pub const Graph = struct {
         return resultado / 2;
     }
     
+    pub fn getEdge(self: *Self, node1: []const u8, node2: []const u8) !i32 {
+        if (!(self.contains(node1)) or !(self.contains(node2))) {
+            return GraphError.NODE_NOT_FOUND;
+        }
+        var node2_pos: usize = undefined;
+        for (self.nodes_map.items, 0..) |nodo, i| {
+            if (std.mem.eql(u8, nodo.label, node2)) {
+                node2_pos = i;
+            }
+        }
+        var resultado: i32 = undefined;
+        for (self.nodes_map.items) |nodo| {
+            if (std.mem.eql(u8, nodo.label, node1)) {
+                resultado = nodo.weigths.items[node2_pos];
+            }
+        }
+        return resultado;
+    }
+
     pub fn printG(self: *Self) void {
         for (self.nodes_map.items) |nodo| {
             print("{s} ",.{nodo.label});

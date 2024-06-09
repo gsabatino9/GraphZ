@@ -48,7 +48,23 @@ pub fn main() !void {
     //try loop_graph(allocator);
 }
 
+pub fn mainq() !void{
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
 
+    
+    var valores = ArrayList([]const u8).init(allocator);
+
+    _ = try valores.append("A");
+    _ = try valores.append("B");
+    _ = try valores.append("C");
+    _ = try valores.append("D");
+
+    print("hola mundo {s}\n",.{valores.items});
+    valores.deinit();
+    
+
+}
 pub fn crearGrafo(allocator: Allocator, nombre_archivo: []const u8) !SomeTuple{ 
 
     var valores = ArrayList([]const u8).init(allocator);
@@ -92,7 +108,7 @@ pub fn crearGrafo(allocator: Allocator, nombre_archivo: []const u8) !SomeTuple{
 
         _ = try graph.addNode(nodo1);
         _ = try graph.addNode(nodo2);
-        _ = try graph.addEdge(nodo1, nodo2, 0);
+        _ = try graph.addEdge(nodo1, nodo2);
 
         if (bool_nodo1) {
             allocator.free(nodo1);

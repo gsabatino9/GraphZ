@@ -1,6 +1,7 @@
 const std = @import("std");
 const print = std.debug.print;
 const Allocator = std.mem.Allocator;
+const Graph_w = @import("weighted_graph.zig").Graph;
 const Graph = @import("graph.zig").Graph;
 const testing = std.testing;
 
@@ -38,7 +39,7 @@ test "Test agrego nodos y aristas\n" {
 
     _ = try graph.addNode("A");
     _ = try graph.addNode("B");
-    _ = try graph.addEdge("A", "B", 0);
+    _ = try graph.addEdge("A", "B");
 
     try testing.expect(graph.countEdges() == 1);
     try testing.expect(graph.edgeExists("A", "B") == true);
@@ -62,7 +63,7 @@ test "Test agrego una arista a un solo nodo"{ //podria borrarse esta
     defer graph.deinit();
 
     _ = try graph.addNode("A");
-    _ = try graph.addEdge("A", "A", 0);
+    _ = try graph.addEdge("A", "A");
 
     try testing.expect(graph.countEdges() == 1);
     try testing.expect(graph.edgeExists("A", "A") == true);
@@ -93,7 +94,7 @@ test "Test agregar una arista a un nodo no existente devuelve error"{
     var graph = Graph.init(allocator, false);
     defer graph.deinit();
 
-    try std.testing.expectError(error.NODE_NOT_FOUND, graph.addEdge("A", "C", 0));
+    try std.testing.expectError(error.NODE_NOT_FOUND, graph.addEdge("A", "C"));
     }
 
 test "Test borrar una arista que no existe devuelve error"{
@@ -122,16 +123,16 @@ test "Test de varias operaciones\n" {
     _ = try graph.addNode("A");
     _ = try graph.addNode("B");
     
-    _ = try graph.addEdge("A", "B", 0);
+    _ = try graph.addEdge("A", "B");
     
     _ = try graph.addNode("A");
     
     _ = try graph.addNode("C");
-    _ = try graph.addEdge("A", "C", 0);
+    _ = try graph.addEdge("A", "C");
     
-    _ = try graph.addEdge("A", "C", 0);
+    _ = try graph.addEdge("A", "C");
     
-    _ = try graph.addEdge("A", "A", 0);
+    _ = try graph.addEdge("A", "A");
     try testing.expect(graph.countEdges() == 4);
 
     _ = try graph.deleteEdge("A", "B");
@@ -174,7 +175,7 @@ test "Test agrego nodos y aristas a un grafo dirigido\n" {
 
     _ = try graph.addNode("A");
     _ = try graph.addNode("B");
-    _ = try graph.addEdge("A", "B", 0);
+    _ = try graph.addEdge("A", "B");
 
     try testing.expect(graph.countEdges() == 1);
     try testing.expect(graph.edgeExists("A", "B") == true);
@@ -197,7 +198,7 @@ test "Test verifico que una arista no agregada no existe en un grafo dirigido"{
 
 test "Test agrego nodos, aristas y pesos" {
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator, false);
+    var graph = Graph_w.init(allocator, false);
     defer graph.deinit();
 
     _ = try graph.addNode("A");
@@ -221,7 +222,7 @@ test "Test agrego nodos, aristas y pesos" {
 
 test "Verificar el peso de un nodo no existente devuelve error"{
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator, false);
+    var graph = Graph_w.init(allocator, false);
     defer graph.deinit();
 
     _ = try graph.addNode("A");
@@ -234,7 +235,7 @@ test "Verificar el peso de un nodo no existente devuelve error"{
 
 test "Agrego y elimino aristas y pesos "{
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator, false);
+    var graph = Graph_w.init(allocator, false);
     defer graph.deinit();
 
     _ = try graph.addNode("A");
@@ -254,7 +255,7 @@ test "Agrego y elimino aristas y pesos "{
 
 test "Agrego y elimino aristas y pesos a un grafo dirigido "{
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator, true);
+    var graph = Graph_w.init(allocator, true);
     defer graph.deinit();
 
     _ = try graph.addNode("A");
@@ -271,7 +272,7 @@ test "Agrego y elimino aristas y pesos a un grafo dirigido "{
 
 test "Agrego y elimino aristas y pesos a un grafo dirigido parte 2"{
     const allocator = testing.allocator;
-    var graph = Graph.init(allocator, true);
+    var graph = Graph_w.init(allocator, true);
     defer graph.deinit();
 
     _ = try graph.addNode("A");
