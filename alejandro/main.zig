@@ -19,7 +19,7 @@ pub fn loop_graph(allocator: Allocator) !void {
         const max_len = 20;
         var buf: [max_len]u8 = undefined;
         const label = try std.fmt.bufPrint(&buf, "{}", .{rand_num});
-        //print("label = {s}, iteracion numero {}\n",.{label, i});
+        print("{s},A\n",.{label});
         _ = try graph.addNode(label);
     }//841629273 -841629273� -84162927 -84162 -8416292 -841629 
     graph.printG();
@@ -30,7 +30,7 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    const tupla = try crearGrafo(allocator, "grafo.csv");
+    const tupla = try crearGrafo(allocator, "grafo_grande.csv");
     //const tupla = try crearGrafo(allocator, "vacio.txt");
     var graph = tupla[1];
     var valores = tupla[0];
@@ -38,7 +38,7 @@ pub fn main() !void {
     defer graph.deinit();
     defer valores.deinit();
 
-    graph.printG();
+    //graph.printG();
     print("tamano = {}\n",.{graph.countNodes()});
     print("tamano = {}\n",.{graph.countEdges()});
 
@@ -48,23 +48,6 @@ pub fn main() !void {
     //try loop_graph(allocator);
 }
 
-pub fn mainq() !void{
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-
-    
-    var valores = ArrayList([]const u8).init(allocator);
-
-    _ = try valores.append("A");
-    _ = try valores.append("B");
-    _ = try valores.append("C");
-    _ = try valores.append("D");
-
-    print("hola mundo {s}\n",.{valores.items});
-    valores.deinit();
-    
-
-}
 pub fn crearGrafo(allocator: Allocator, nombre_archivo: []const u8) !SomeTuple{ 
 
     var valores = ArrayList([]const u8).init(allocator);

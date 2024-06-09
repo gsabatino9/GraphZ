@@ -31,4 +31,19 @@ Grafo:
 
     pub fn deleteEdge(self: *Self, node1: []const u8, node2: []const u8): O(2n) ya que hace dos llamado a "nodeExists", luego otro O(2n) ya que tengo que recorrer todos los nodos para encontrar sus posiciones en el grafo. Por último hago dos acessos a las posiciones que son O(1) por lo que en total sería O(4n) = O(n)
 
-    
+    Estadistica de Perf:
+    Performance counter stats for 'zig run main.zig':
+
+         12.371,95 msec task-clock                       #    0,990 CPUs utilized             
+             2.599      context-switches                 #  210,072 /sec                      
+                11      cpu-migrations                   #    0,889 /sec                      
+         1.296.006      page-faults                      #  104,754 K/sec                     
+   <not supported>      cycles                                                                
+   <not supported>      instructions                                                          
+   <not supported>      branches                                                              
+   <not supported>      branch-misses                                                         
+
+      12,494373457 seconds time elapsed
+
+       9,048919000 seconds user
+       3,318873000 seconds sys

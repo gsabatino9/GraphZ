@@ -291,3 +291,30 @@ test "Agrego y elimino aristas y pesos a un grafo dirigido parte 2"{
     try testing.expect(try graph.getEdge("B", "A") == 10);
 
 }
+
+
+test "test valores raros"{
+
+    const valor1 = "1225466847";
+    const valor2 = "-1354080534";
+    const valor3 = "-1014967033";
+    const valor4 = "-325420036";
+    const valor5 = "1002331674";
+    const valor6 = "-1069396970";
+
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator, false);
+    defer graph.deinit();
+
+    _ = try graph.addNode(valor1);
+    _ = try graph.addNode(valor2);
+    _ = try graph.addNode(valor3);
+    _ = try graph.addNode(valor4);
+    _ = try graph.addNode(valor5);
+    _ = try graph.addNode(valor6);
+    
+    graph.printG();
+    try testing.expect(graph.countNodes() == 6);
+    
+
+}
