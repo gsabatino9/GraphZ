@@ -191,3 +191,102 @@ test "Test verifico que una arista no agregada no existe en un grafo dirigido"{
 
     try testing.expect(graph.edgeExists("A","B") == false);
 }
+
+
+//Test de grafo pesado
+
+test "Test agrego nodos, aristas y pesos" {
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator, false);
+    defer graph.deinit();
+
+    _ = try graph.addNode("A");
+    _ = try graph.addNode("B");
+    _ = try graph.addEdge("A", "B", 2);
+
+    _ = try graph.addNode("C");
+    _ = try graph.addNode("D");
+    _ = try graph.addEdge("C", "D", 5);
+
+
+    try testing.expect(graph.countEdges() == 2);
+    try testing.expect(graph.edgeExists("A", "B") == true);
+    try testing.expect(graph.edgeExists("C", "D") == true);
+
+    try testing.expect(try graph.getEdge("A", "B") == 2);
+    try testing.expect(try graph.getEdge("C", "D") == 5);
+    
+}
+
+
+test "Verificar el peso de un nodo no existente devuelve error"{
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator, false);
+    defer graph.deinit();
+
+    _ = try graph.addNode("A");
+    _ = try graph.addNode("B");
+    _ = try graph.addEdge("A", "B", 2);
+
+    try std.testing.expectError(error.NODE_NOT_FOUND, graph.getEdge("A","C"));
+
+}
+
+test "Agrego y elimino aristas y pesos "{
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator, false);
+    defer graph.deinit();
+
+    _ = try graph.addNode("A");
+    _ = try graph.addNode("B");
+    _ = try graph.addEdge("A", "B", 2);
+
+    try testing.expect(graph.edgeExists("A", "B") == true);
+    try testing.expect(try graph.getEdge("A", "B") == 2);
+    
+    _ = try graph.deleteEdge("A", "B");
+
+    try testing.expect(graph.edgeExists("A", "B") == false);
+    try testing.expect(try graph.getEdge("A", "B") == 0);
+    
+}
+
+
+test "Agrego y elimino aristas y pesos a un grafo dirigido "{
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator, true);
+    defer graph.deinit();
+
+    _ = try graph.addNode("A");
+    _ = try graph.addNode("B");
+    _ = try graph.addEdge("A", "B", 2);
+
+    try testing.expect(graph.edgeExists("A", "B") == true);
+    try testing.expect(try graph.getEdge("A", "B") == 2);
+
+    try testing.expect(graph.edgeExists("B", "A") == false);
+    try testing.expect(try graph.getEdge("B", "A") == 0);
+}
+
+
+test "Agrego y elimino aristas y pesos a un grafo dirigido parte 2"{
+    const allocator = testing.allocator;
+    var graph = Graph.init(allocator, true);
+    defer graph.deinit();
+
+    _ = try graph.addNode("A");
+    _ = try graph.addNode("B");
+    _ = try graph.addEdge("A", "B", 2);
+
+    try testing.expect(graph.edgeExists("A", "B") == true);
+    try testing.expect(try graph.getEdge("A", "B") == 2);
+
+    try testing.expect(graph.edgeExists("B", "A") == false);
+    try testing.expect(try graph.getEdge("B", "A") == 0);
+
+    _ = try graph.addEdge("B", "A", 10);
+    
+    try testing.expect(graph.edgeExists("B", "A") == true);
+    try testing.expect(try graph.getEdge("B", "A") == 10);
+
+}

@@ -120,7 +120,6 @@ pub const Graph = struct {
 
     /// devuelve GraphError.NODE_NOT_FOUND en caso de que alguno de los dos nodos
     /// no existan
-    /// Esta implementación es para grafos no dirigidos
     pub fn addEdge(self: *Self, node1: []const u8, node2: []const u8, peso: i32) !bool {
         // si no existen los nodos, devuelvo error
         if (!(self.nodeExists(node1)) or !(self.nodeExists(node2))) {
@@ -148,8 +147,6 @@ pub const Graph = struct {
     }
 
     /// devuelve true en caso de que la arista exista, false en caso de que no
-    /// la implementación cambia si el grafo es dirigido o no
-    /// en este caso no es dirigido
     pub fn edgeExists(self: *Self, node1: []const u8, node2: []const u8) bool {
         // si no existen los nodos, devuelvo error
         if (!(self.contains(node1)) or !(self.contains(node2))) {
@@ -176,20 +173,20 @@ pub const Graph = struct {
         }
 
         var node_pos: usize = undefined;
-        //var label: u8 = undefined;
 
         for (self.nodes_map.items, 0..) |nodo, i| {
             if (std.mem.eql(u8, nodo.label, node1)) {
                 node_pos = i;
             }
         }
-        var n = self.nodes_map.orderedRemove(node_pos);
-        const label = n.label;
-        n.deinit();
+        var nodo = self.nodes_map.orderedRemove(node_pos);
+        const label = nodo.label;
+        nodo.deinit();
 
-        for (self.nodes_map.items, 0..) |nodo, i| {
-            var aux = nodo;
+        for (self.nodes_map.items, 0..) |n, i| {
+            var aux = n;
             _ = aux.adj.orderedRemove(node_pos);
+            _ = aux.weigths.orderedRemove(node_pos);
 
             self.nodes_map.items[i] = aux;
         }
@@ -218,7 +215,12 @@ pub const Graph = struct {
             }
         }
         self.nodes_map.items[node1_pos].adj.items[node2_pos] = 0;
-        if (!self.is_directed) self.nodes_map.items[node2_pos].adj.items[node1_pos] = 0;
+        self.nodes_map.items[node1_pos].weigths.items[node2_pos] = 0;
+        
+        if (!self.is_directed) {
+            self.nodes_map.items[node2_pos].adj.items[node1_pos] = 0;
+            self.nodes_map.items[node2_pos].weigths.items[node1_pos] = 0;
+        }
     }
 
     pub fn countNodes(self: *Self) u32 {
@@ -235,6 +237,26 @@ pub const Graph = struct {
         if (self.is_directed) return resultado;
         return resultado / 2;
     }
+    
+    pub fn getEdge(self: *Self, node1: []const u8, node2: []const u8) !i32 {
+        if (!(self.contains(node1)) or !(self.contains(node2))) {
+            return GraphError.NODE_NOT_FOUND;
+        }
+        var node2_pos: usize = undefined;
+        for (self.nodes_map.items, 0..) |nodo, i| {
+            if (std.mem.eql(u8, nodo.label, node2)) {
+                node2_pos = i;
+            }
+        }
+        var resultado: i32 = undefined;
+        for (self.nodes_map.items) |nodo| {
+            if (std.mem.eql(u8, nodo.label, node1)) {
+                resultado = nodo.weigths.items[node2_pos];
+            }
+        }
+        return resultado;
+    }
+
     pub fn printG(self: *Self) void {
         for (self.nodes_map.items) |nodo| {
             print("{s} ",.{nodo.label});
