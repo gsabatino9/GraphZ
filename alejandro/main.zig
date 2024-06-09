@@ -19,9 +19,11 @@ pub fn loop_graph(allocator: Allocator) !void {
         const max_len = 20;
         var buf: [max_len]u8 = undefined;
         const label = try std.fmt.bufPrint(&buf, "{}", .{rand_num});
-
+        //print("label = {s}, iteracion numero {}\n",.{label, i});
         _ = try graph.addNode(label);
-    }
+    }//841629273 -841629273� -84162927 -84162 -8416292 -841629 
+    graph.printG();
+    print("tamano del segundo grafo = {}\n",.{graph.countNodes()});
 }
 
 pub fn main() !void {
@@ -29,6 +31,7 @@ pub fn main() !void {
     const allocator = gpa.allocator();
 
     const tupla = try crearGrafo(allocator, "grafo.csv");
+    //const tupla = try crearGrafo(allocator, "vacio.txt");
     var graph = tupla[1];
     var valores = tupla[0];
         
@@ -42,7 +45,7 @@ pub fn main() !void {
     for (valores.items) |item| {
         allocator.free(item);
     }
-    try loop_graph(allocator);
+    //try loop_graph(allocator);
 }
 
 
@@ -89,7 +92,7 @@ pub fn crearGrafo(allocator: Allocator, nombre_archivo: []const u8) !SomeTuple{
 
         _ = try graph.addNode(nodo1);
         _ = try graph.addNode(nodo2);
-        _ = try graph.addEdge(nodo1, nodo2);
+        _ = try graph.addEdge(nodo1, nodo2, 0);
 
         if (bool_nodo1) {
             allocator.free(nodo1);
