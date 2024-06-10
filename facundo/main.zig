@@ -11,49 +11,51 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    // grafo direccionado creado por stdin
+    ///////////////////////////////////////////////////////////////
+    // GRAFO CREADO POR STDIN
+    ///////////////////////////////////////////////////////////////
+
+    // GRADO DIRECCIONADO
     var directedGraphStdin: DirectedGraph = DirectedGraph.init(allocator);
     defer directedGraphStdin.deinit();
-    // grafo no direccionado creado por stdin
+    // solicita nodos y sus adyacentes, y los inserta.
+    print("\nIngresar los nodos y adyacentes del grafo direccionado: \n", .{});
+    try directedGraphStdin.insertStdin(allocator);
+    // imprime nodos y sus adyacentes
+    print("\nGrafo direccionado: \n", .{});
+    try Aux.DirectedGraphPrint(directedGraphStdin);
+
+    // GRAFO NO DIRECCIONADO
     var undirectedGraphStdin: UndirectedGraph = UndirectedGraph.init(allocator);
     defer undirectedGraphStdin.deinit();
+    // solicita nodos y sus adyacentes, y los inserta.
+    print("\nIngresar los nodos y adyacentes del grafo no direccionado: \n", .{});
+    try undirectedGraphStdin.insertStdin(allocator);
+    // imprime nodos y sus adyacentes
+    print("\nGrafo no direccionado: \n", .{});
+    try Aux.UndirectedGraphPrint(undirectedGraphStdin);
 
-    // grafo direccionado creado a partir de un .csv
+    ///////////////////////////////////////////////////////////////
+    // GRAFO CREADO LEYENDO UN ARCHIVO
+    ///////////////////////////////////////////////////////////////
+
+    // GRAFO DIRECCIONADO
     var directedGraphText: DirectedGraph = DirectedGraph.init(allocator);
     defer directedGraphText.deinit();
-    // grafo no direccionado creado a partir de un .csv
+    // Crea grafo a partir de un archivo
+    print("\nCreando grafo a partir de un archivo: \n", .{});
+    try directedGraphText.insertFile();
+    // imprime nodos y sus adyacentes
+    print("\nGrafo direccionado: \n", .{});
+    try Aux.DirectedGraphPrint(directedGraphText);
+
+    // GRADO NO DIRECCIONADO
     var undirectedGraphText: UndirectedGraph = UndirectedGraph.init(allocator);
     defer undirectedGraphText.deinit();
-
-    ///////////////////////////////////////////////////////////////
-
-    // Grafo direccionado    -> Crea grafo por stdin: solicita nodos y sus adyacentes, y los inserta.
-    print("Ingresar los nodos y adyacentes del grafo direccionado: \n");
-    try directedGraphStdin.insertStdin(allocator);
-    // Grafo no direccionado -> Crea grafo por stdin: solicita nodos y sus adyacentes, y los inserta.
-    print("Ingresar los nodos y adyacentes del grafo no direccionado: \n");
-    try undirectedGraphStdin.insertStdin(allocator);
-
-    // Grafo direccionado    -> imprime nodos y sus adyacentes
-    print("Grafo direccionado: \n");
-    try Aux.DirectedGraphPrint(directedGraphStdin);
-    // Grafo no direccionado -> imprime nodos y sus adyacentes
-    print("Grafo no direccionado: \n");
-    try Aux.UndirectedGraphPrint(undirectedGraphStdin);
-
-    ///////////////////////////////////////////////////////////////
-
-    // Grafo direccionado    -> Crea grafo a partir de un .csv
-    print("Creando grafo a partir de un .csv: \n");
+    // Crea grafo a partir de un archivo
+    print("\nCreando grafo a partir de un archivo: \n", .{});
     try undirectedGraphText.insertFile();
-    // Grafo no direccionado -> Crea grafo a partir de un .csv
-    print("Creando grafo a partir de un .csv: \n");
-    try undirectedGraphText.insertFile();
-
-    // Grafo direccionado    -> imprime nodos y sus adyacentes
-    print("Grafo direccionado: \n");
-    try Aux.DirectedGraphPrint(directedGraphStdin);
-    // Grafo no direccionado -> imprime nodos y sus adyacentes
-    print("Grafo no direccionado: \n");
-    try Aux.UndirectedGraphPrint(undirectedGraphStdin);
+    // imprime nodos y sus adyacentes
+    print("\nGrafo no direccionado: \n", .{});
+    try Aux.UndirectedGraphPrint(undirectedGraphText);
 }

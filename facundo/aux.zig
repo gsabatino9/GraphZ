@@ -41,7 +41,7 @@ pub fn read_and_own(allocator: Allocator, is_title: u8) ReadError![]const u8 {
 }
 
 // lee e imprime archivo
-pub fn readtsv() !void {
+pub fn readFile() !void {
     var splits_line = split(u8, data, "\n");
     while (splits_line.next()) |line| {
         print("{s}\n", .{line});
