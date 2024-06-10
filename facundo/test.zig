@@ -320,6 +320,15 @@ test "TEST DIRECTED GRAPH: Recorrido DFS" {
     try graph.dfs("A", "J");
 }
 
+test "TEST DIRECTED GRAPH: Lee archivo sin errores" {
+    const allocator = testing.allocator;
+    var graph: DirectedGraph = DirectedGraph.init(allocator);
+    defer graph.deinit();
+
+    try graph.insertFile();
+    // try Aux.DirectedGraphPrint(graph);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // TEST UNDIRECTED GRAPH
 
@@ -631,4 +640,13 @@ test "TEST UNDIRECTED GRAPH: Recorrido DFS" {
     try graph.dfs("A", "D");
     try graph.dfs("A", "I");
     try graph.dfs("A", "J");
+}
+
+test "TEST UNDIRECTED GRAPH: Lee archivo sin errores" {
+    const allocator = testing.allocator;
+    var graph: UndirectedGraph = UndirectedGraph.init(allocator);
+    defer graph.deinit();
+
+    try graph.insertFile();
+    // try Aux.UndirectedGraphPrint(graph);
 }

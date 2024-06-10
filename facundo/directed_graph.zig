@@ -9,6 +9,8 @@ const DadMap = std.StringHashMap(?[]const u8);
 const OrderMap = std.StringHashMap(u8);
 const VisitedMap = std.StringHashMap([]const u8);
 const Aux = @import("aux.zig");
+const data = @embedFile("data/wiki.tsv");
+const split = std.mem.split;
 
 // Errores
 const GraphError = error{ NODE_NOT_EXISTS, EDGE_NOT_EXISTS };
@@ -17,7 +19,7 @@ const ReadError = error{BadRead};
 pub const Node = struct {
     allocator: Allocator,
     ady_map: AdyMap,
-    adyNumber: u8,
+    adyNumber: u16,
 
     const Self = @This();
 
@@ -65,7 +67,7 @@ pub const Node = struct {
     }
 
     // devuelve la cantidad de adyacentes del nodo
-    pub fn getAdyNumber(self: *Self) u8 {
+    pub fn getAdyNumber(self: *Self) u16 {
         return self.adyNumber;
     }
 };
@@ -73,8 +75,8 @@ pub const Node = struct {
 pub const Graph = struct {
     allocator: Allocator,
     nodes_map: NodesMap,
-    nodeNumber: u8,
-    edgeNumber: u8,
+    nodeNumber: u32,
+    edgeNumber: u32,
 
     const Self = @This();
 
@@ -170,16 +172,16 @@ pub const Graph = struct {
     }
 
     // Devuelve la cantidad de nodos del grafo -> O(n)
-    pub fn getEdgeNumber(self: *Self) u8 {
+    pub fn getEdgeNumber(self: *Self) u32 {
         return self.edgeNumber;
     }
 
     // Devuelve la cantidad de nodos del grafo
-    pub fn getNodeNumber(self: *Self) u8 {
+    pub fn getNodeNumber(self: *Self) u32 {
         return self.nodeNumber;
     }
 
-    pub fn getAdyNumber(self: *Self, node: []const u8) u8 {
+    pub fn getAdyNumber(self: *Self, node: []const u8) u16 {
         var node_ = self.nodes_map.getPtr(node) orelse unreachable;
         return node_.getAdyNumber();
     }
@@ -289,6 +291,20 @@ pub const Graph = struct {
                 if (!self.edgeExists(node, aux)) {
                     _ = self.addEdge(node, aux) catch false;
                 }
+            }
+        }
+    }
+
+    // lee archivo y crea el grafo
+    pub fn insertFile(self: *Self) !void {
+        var splits_line = split(u8, data, "\n");
+        while (splits_line.next()) |line| {
+            var splits_node = split(u8, line, "\t");
+            const node = splits_node.first();
+            _ = splits_node.next();
+            _ = try self.addNode(node);
+            while (splits_node.next()) |node_ady| {
+                _ = try self.addEdge(node, node_ady);
             }
         }
     }

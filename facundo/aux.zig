@@ -10,7 +10,8 @@ const DirectedNode = @import("directed_graph.zig").Node;
 const UndirectedNodesMap = std.StringHashMap(UndirectedNode);
 const UndirectedGraph = @import("undirected_graph.zig").Graph;
 const UndirectedNode = @import("undirected_graph.zig").Node;
-// Errores
+const data = @embedFile("data/wiki.tsv");
+const split = std.mem.split;
 const ReadError = error{BadRead};
 
 // FUNCIONES AUXILIARES
@@ -36,6 +37,14 @@ pub fn read_and_own(allocator: Allocator, is_title: u8) ReadError![]const u8 {
         } else {
             return owned_label.?;
         }
+    }
+}
+
+// lee e imprime archivo
+pub fn readtsv() !void {
+    var splits_line = split(u8, data, "\n");
+    while (splits_line.next()) |line| {
+        print("{s}\n", .{line});
     }
 }
 
@@ -86,7 +95,7 @@ fn printDads_(dads: DadMap, B: []const u8) !void {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-// BORRADOR
+// BORRADOR STDIN
 //
 //    while (true) {
 //        // solicita nodo por stdin
@@ -109,3 +118,16 @@ fn printDads_(dads: DadMap, B: []const u8) !void {
 //            }
 //        }
 //    }
+//
+// BORRADOR ARCHIVOS
+//
+//     const cwd = std.fs.cwd();
+//     // directorio del archivo
+//     var output_dir = try cwd.openDir("data", .{});
+//     defer output_dir.close();
+//     // abro archivo en directorio
+//     const file = try output_dir.openFile("wiki", .{});
+//     defer file.close();
+//     // leo archivo
+//     const read_buf = try file.readToEndAlloc(allocator, 1024);
+//     defer allocator.free(read_buf);
